@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<?pde version="3.8"?>
+<target name="1C Copilot Target Platform" sequenceNumber="10">
+    <locations>
+        <location includeAllPlatforms="false" includeConfigurePhase="true" includeMode="planner" includeSource="true" type="InstallableUnit">
+            <repository location="https://download.eclipse.org/releases/2023-12"/>
+            <unit id="org.eclipse.sdk.feature.group" version="0.0.0"/>
+            <unit id="com.google.gson" version="0.0.0"/>
+        </location>
+        <!-- Apache Lucene from Eclipse Orbit for vector search -->
+        <location includeAllPlatforms="false" includeConfigurePhase="true" includeMode="planner" includeSource="true" type="InstallableUnit">
+            <repository location="https://download.eclipse.org/tools/orbit/simrel/orbit-aggregation/2023-12"/>
+            <unit id="org.apache.lucene.core" version="0.0.0"/>
+            <unit id="org.apache.lucene.analysis-common" version="0.0.0"/>
+            <unit id="org.apache.lucene.queryparser" version="0.0.0"/>
+        </location>
+    </locations>
+    <targetJRE path="org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/JavaSE-17"/>
+</target>

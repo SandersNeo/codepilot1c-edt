@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>com.codepilot1c</groupId>
+        <artifactId>repositories</artifactId>
+        <version>1.3.0-SNAPSHOT</version>
+    </parent>
+
+    <artifactId>com.codepilot1c.update</artifactId>
+    <packaging>eclipse-repository</packaging>
+
+    <name>1C Copilot Update Site</name>
+    <description>P2 repository for 1C Copilot plugin installation</description>
+</project>

@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?eclipse version="3.4"?>
+<plugin>
+    <!-- Extension point for LLM providers -->
+    <extension-point id="llmProvider"
+                     name="%extensionPoint.llmProvider.name"
+                     schema="schema/llmProvider.exsd"/>
+
+    <!-- Extension point for embedding providers -->
+    <extension-point id="embeddingProvider"
+                     name="%extensionPoint.embeddingProvider.name"
+                     schema="schema/embeddingProvider.exsd"/>
+
+    <!-- Extension point for additional tool contributions (e.g. Pro overlay) -->
+    <extension-point id="toolProvider"
+                     name="%extensionPoint.toolProvider.name"
+                     schema="schema/toolProvider.exsd"/>
+
+    <!-- Extension point for prompt overrides (e.g. Pro overlay) -->
+    <extension-point id="promptProvider"
+                     name="%extensionPoint.promptProvider.name"
+                     schema="schema/promptProvider.exsd"/>
+
+    <!-- Built-in LLM providers -->
+    <extension point="com.codepilot1c.core.llmProvider">
+        <provider
+            id="claude"
+            name="%provider.claude.name"
+            class="com.codepilot1c.core.provider.claude.ClaudeProvider"
+            icon="icons/claude.png">
+            <description>%provider.claude.description</description>
+        </provider>
+        <provider
+            id="openai"
+            name="%provider.openai.name"
+            class="com.codepilot1c.core.provider.openai.OpenAiProvider"
+            icon="icons/openai.png">
+            <description>%provider.openai.description</description>
+        </provider>
+        <provider
+            id="ollama"
+            name="%provider.ollama.name"
+            class="com.codepilot1c.core.provider.ollama.OllamaProvider"
+            icon="icons/ollama.png">
+            <description>%provider.ollama.description</description>
+        </provider>
+    </extension>
+
+    <!-- Built-in embedding providers -->
+    <extension point="com.codepilot1c.core.embeddingProvider">
+        <provider
+            id="openai"
+            name="%provider.openai.embeddings.name"
+            class="com.codepilot1c.core.embedding.openai.OpenAiEmbeddingProvider"
+            icon="icons/openai.png">
+            <description>%provider.openai.embeddings.description</description>
+        </provider>
+        <provider
+            id="ollama"
+            name="%provider.ollama.embeddings.name"
+            class="com.codepilot1c.core.embedding.ollama.OllamaEmbeddingProvider"
+            icon="icons/ollama.png">
+            <description>%provider.ollama.embeddings.description</description>
+        </provider>
+    </extension>
+
+    <!-- Preferences initializer -->
+    <extension point="org.eclipse.core.runtime.preferences">
+        <initializer class="com.codepilot1c.core.internal.VibePreferenceInitializer"/>
+    </extension>
+</plugin>

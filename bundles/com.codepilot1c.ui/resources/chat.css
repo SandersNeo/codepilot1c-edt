@@ -1,0 +1,699 @@
+/* Chat Styles - Light & Dark Theme Support */
+
+/* CSS Variables - Light Theme (default) */
+:root {
+    --bg-primary: #ffffff;
+    --bg-secondary: #f8fafc;
+    --bg-message-user: #e3f2fd;
+    --bg-message-assistant: #ffffff;
+    --bg-message-system: #fff3e0;
+
+    --text-primary: #1a1a2e;
+    --text-secondary: #64748b;
+    --text-muted: #94a3b8;
+
+    --border-color: #e2e8f0;
+    --border-radius: 8px;
+
+    --code-bg: #f1f5f9;
+    --code-border: #e2e8f0;
+    --code-text: #1e293b;
+
+    --table-header-bg: #f8fafc;
+    --table-border: #e2e8f0;
+    --table-row-hover: #f1f5f9;
+
+    --link-color: #2563eb;
+    --link-hover: #1d4ed8;
+
+    --accent: #3b82f6;
+    --success: #22c55e;
+    --warning: #f59e0b;
+    --danger: #ef4444;
+
+    --btn-bg: #e2e8f0;
+    --btn-hover: #cbd5e1;
+    --btn-text: #475569;
+
+    --scrollbar-track: #f1f5f9;
+    --scrollbar-thumb: #cbd5e1;
+
+    --shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    --shadow-lg: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+/* Dark Theme */
+body.dark {
+    --bg-primary: #0f172a;
+    --bg-secondary: #1e293b;
+    --bg-message-user: #1e3a5f;
+    --bg-message-assistant: #1e293b;
+    --bg-message-system: #422006;
+
+    --text-primary: #f1f5f9;
+    --text-secondary: #94a3b8;
+    --text-muted: #64748b;
+
+    --border-color: #334155;
+
+    --code-bg: #0f172a;
+    --code-border: #334155;
+    --code-text: #e2e8f0;
+
+    --table-header-bg: #1e293b;
+    --table-border: #334155;
+    --table-row-hover: #334155;
+
+    --link-color: #60a5fa;
+    --link-hover: #93c5fd;
+
+    --accent: #3b82f6;
+    --success: #22c55e;
+    --warning: #f59e0b;
+    --danger: #f87171;
+
+    --btn-bg: #334155;
+    --btn-hover: #475569;
+    --btn-text: #e2e8f0;
+
+    --scrollbar-track: #1e293b;
+    --scrollbar-thumb: #475569;
+
+    --shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+    --shadow-lg: 0 4px 6px rgba(0, 0, 0, 0.4);
+}
+
+/* Base Styles */
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+html, body {
+    height: 100%;
+    overflow: hidden;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    font-size: 14px;
+    line-height: 1.6;
+    color: var(--text-primary);
+    background: var(--bg-primary);
+}
+
+/* Layout */
+.chat-root {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+
+/* Scrollbar Styling */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: var(--scrollbar-track);
+}
+
+::-webkit-scrollbar-thumb {
+    background: var(--scrollbar-thumb);
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: var(--text-muted);
+}
+
+/* Message Container */
+.message-container {
+    padding: 16px;
+    overflow-y: auto;
+    flex: 1 1 auto;
+}
+
+/* Message Bubble */
+.message {
+    margin-bottom: 16px;
+    padding: 12px 16px;
+    border-radius: var(--border-radius);
+    box-shadow: var(--shadow);
+}
+
+.message.user {
+    background: var(--bg-message-user);
+    margin-left: 40px;
+}
+
+.message.assistant {
+    background: var(--bg-message-assistant);
+    border: 1px solid var(--border-color);
+}
+
+.message.system {
+    background: var(--bg-message-system);
+    font-style: italic;
+}
+
+/* Message Header */
+.message-header {
+    display: flex;
+    align-items: center;
+    margin-bottom: 8px;
+    font-size: 12px;
+    color: var(--text-secondary);
+}
+
+.message-sender {
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.message-time {
+    margin-left: auto;
+    color: var(--text-muted);
+}
+
+/* Typography */
+h1, h2, h3, h4, h5, h6 {
+    margin: 16px 0 8px 0;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+h1 { font-size: 1.5em; }
+h2 { font-size: 1.3em; }
+h3 { font-size: 1.15em; }
+h4 { font-size: 1.05em; }
+h5, h6 { font-size: 1em; }
+
+p {
+    margin: 8px 0;
+}
+
+/* Lists */
+ul, ol {
+    margin: 8px 0;
+    padding-left: 24px;
+}
+
+li {
+    margin: 4px 0;
+}
+
+/* Links */
+a {
+    color: var(--link-color);
+    text-decoration: none;
+}
+
+a:hover {
+    color: var(--link-hover);
+    text-decoration: underline;
+}
+
+/* Blockquotes */
+blockquote {
+    margin: 12px 0;
+    padding: 8px 16px;
+    border-left: 4px solid var(--accent);
+    background: var(--bg-secondary);
+    color: var(--text-secondary);
+}
+
+/* Horizontal Rule */
+hr {
+    margin: 16px 0;
+    border: none;
+    border-top: 1px solid var(--border-color);
+}
+
+/* Inline Code */
+code.inline {
+    padding: 2px 6px;
+    background: var(--code-bg);
+    border: 1px solid var(--code-border);
+    border-radius: 4px;
+    font-family: 'JetBrains Mono', 'Fira Code', 'Consolas', 'Monaco', monospace;
+    font-size: 0.9em;
+    color: var(--code-text);
+}
+
+/* Code Blocks */
+.code-block {
+    margin: 12px 0;
+    border-radius: var(--border-radius);
+    overflow: hidden;
+    background: var(--code-bg);
+    border: 1px solid var(--code-border);
+}
+
+.code-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 12px;
+    background: var(--bg-secondary);
+    border-bottom: 1px solid var(--code-border);
+}
+
+.code-lang {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+}
+
+.copy-btn {
+    padding: 4px 12px;
+    background: var(--btn-bg);
+    border: none;
+    border-radius: 4px;
+    font-size: 12px;
+    color: var(--btn-text);
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.copy-btn:hover {
+    background: var(--btn-hover);
+}
+
+.copy-btn.copied {
+    background: var(--success);
+    color: white;
+}
+
+pre {
+    margin: 0;
+    padding: 12px 16px;
+    overflow-x: auto;
+    background: var(--code-bg);
+}
+
+pre code {
+    font-family: 'JetBrains Mono', 'Fira Code', 'Consolas', 'Monaco', monospace;
+    font-size: 13px;
+    line-height: 1.5;
+    color: var(--code-text);
+    white-space: pre;
+    tab-size: 4;
+}
+
+/* Tables */
+table {
+    width: 100%;
+    margin: 12px 0;
+    border-collapse: collapse;
+    border: 1px solid var(--table-border);
+    border-radius: var(--border-radius);
+    overflow: hidden;
+}
+
+thead {
+    background: var(--table-header-bg);
+}
+
+th {
+    padding: 10px 12px;
+    font-weight: 600;
+    text-align: left;
+    border-bottom: 2px solid var(--table-border);
+    color: var(--text-primary);
+}
+
+td {
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--table-border);
+    color: var(--text-primary);
+}
+
+tr:last-child td {
+    border-bottom: none;
+}
+
+tbody tr:hover {
+    background: var(--table-row-hover);
+}
+
+/* Strong & Emphasis */
+strong {
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+em {
+    font-style: italic;
+}
+
+/* Selection */
+::selection {
+    background: var(--accent);
+    color: white;
+}
+
+/* Tool Call Widget Styles */
+.tool-call {
+    margin: 12px 0;
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    overflow: hidden;
+}
+
+.tool-call-header {
+    display: flex;
+    align-items: center;
+    padding: 8px 12px;
+    background: var(--bg-secondary);
+    cursor: pointer;
+    user-select: none;
+}
+
+.tool-call-header:hover {
+    background: var(--table-row-hover);
+}
+
+.tool-call-icon {
+    margin-right: 8px;
+    font-size: 16px;
+}
+
+.tool-call-name {
+    font-weight: 500;
+    color: var(--text-primary);
+}
+
+.tool-call-status {
+    margin-left: auto;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+}
+
+.tool-call-status.pending {
+    background: var(--warning);
+    color: white;
+}
+
+.tool-call-status.running {
+    background: var(--accent);
+    color: white;
+}
+
+.tool-call-status.success {
+    background: var(--success);
+    color: white;
+}
+
+.tool-call-status.error {
+    background: var(--danger);
+    color: white;
+}
+
+.tool-call-body {
+    padding: 12px;
+    display: none;
+}
+
+.tool-call.expanded .tool-call-body {
+    display: block;
+}
+
+.tool-call-args,
+.tool-call-result {
+    margin: 8px 0;
+}
+
+.tool-call-args pre,
+.tool-call-result pre {
+    margin: 4px 0;
+    padding: 8px;
+    background: var(--code-bg);
+    border-radius: 4px;
+    font-size: 12px;
+}
+
+/* Tool call args summary in header */
+.tool-call-args-summary {
+    margin-left: 8px;
+    padding: 2px 8px;
+    background: var(--code-bg);
+    border-radius: 4px;
+    font-size: 12px;
+    color: var(--text-secondary);
+    font-family: 'JetBrains Mono', 'Fira Code', 'Consolas', 'Monaco', monospace;
+    max-width: 300px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* Tool call section styling */
+.tool-call-section {
+    margin-bottom: 12px;
+}
+
+.tool-call-section-title {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    margin-bottom: 4px;
+}
+
+.tool-call-result-preview {
+    max-height: 200px;
+    overflow-y: auto;
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+
+/* Expand indicator */
+.tool-call-header::after {
+    content: '\25B6';
+    font-size: 10px;
+    margin-left: auto;
+    padding-left: 8px;
+    color: var(--text-muted);
+    transition: transform 0.2s;
+}
+
+.tool-call.expanded .tool-call-header::after {
+    transform: rotate(90deg);
+}
+
+/* Status badge improvements */
+.tool-call-status {
+    margin-left: 8px;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 500;
+    white-space: nowrap;
+}
+
+/* Spinner animation for running status */
+.tool-call-status.running::before {
+    content: '';
+    display: inline-block;
+    width: 10px;
+    height: 10px;
+    margin-right: 4px;
+    border: 2px solid rgba(255,255,255,0.3);
+    border-top-color: white;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    vertical-align: middle;
+}
+
+/* Tool call body improvements */
+.tool-call-body {
+    border-top: 1px solid var(--border-color);
+}
+
+.tool-call-args {
+    font-family: 'JetBrains Mono', 'Fira Code', 'Consolas', 'Monaco', monospace;
+    white-space: pre-wrap;
+    word-break: break-word;
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+/* Animations */
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.message {
+    animation: fadeIn 0.3s ease-out;
+}
+
+/* Typing Indicator */
+.typing-indicator {
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px 12px;
+    margin: 12px 0;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    color: var(--text-secondary);
+    animation: fadeIn 0.3s ease-out;
+}
+
+.typing-content {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.typing-spinner {
+    width: 20px;
+    height: 20px;
+    border: 2px solid var(--border-color);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+#typing-stage {
+    font-weight: 500;
+    color: var(--text-primary);
+}
+
+.typing-dots {
+    display: flex;
+    gap: 4px;
+    margin-left: 12px;
+}
+
+.typing-dot {
+    width: 6px;
+    height: 6px;
+    background: var(--accent);
+    border-radius: 50%;
+    animation: typing 1.4s infinite;
+}
+
+.typing-dot:nth-child(2) { animation-delay: 0.2s; }
+.typing-dot:nth-child(3) { animation-delay: 0.4s; }
+
+@keyframes typing {
+    0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
+    30% { transform: translateY(-4px); opacity: 1; }
+}
+
+/* Priority Indicators (for review tables) */
+.priority-critical { color: var(--danger); }
+.priority-high { color: #f97316; }
+.priority-medium { color: var(--warning); }
+.priority-low { color: var(--success); }
+
+/* Emoji indicators for priority */
+.priority-emoji::before {
+    display: inline-block;
+    width: 20px;
+}
+
+/* Checkmarks */
+.checkmark {
+    color: var(--success);
+}
+
+/* Reasoning Block (Thinking Mode) */
+.reasoning-block {
+    margin-bottom: 12px;
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    background: var(--bg-secondary);
+    overflow: hidden;
+}
+
+.reasoning-block summary {
+    padding: 8px 12px;
+    cursor: pointer;
+    font-size: 13px;
+    color: var(--text-secondary);
+    user-select: none;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.reasoning-block summary:hover {
+    background: var(--table-row-hover);
+}
+
+.reasoning-block[open] summary {
+    border-bottom: 1px solid var(--border-color);
+}
+
+.reasoning-block summary::-webkit-details-marker {
+    display: none;
+}
+
+.reasoning-block summary::before {
+    content: '\25B6';
+    font-size: 10px;
+    transition: transform 0.2s;
+}
+
+.reasoning-block[open] summary::before {
+    transform: rotate(90deg);
+}
+
+.reasoning-content {
+    padding: 12px;
+    font-size: 12px;
+    line-height: 1.6;
+    color: var(--text-secondary);
+    max-height: 400px;
+    overflow-y: auto;
+    white-space: pre-wrap;
+    font-family: 'JetBrains Mono', 'Fira Code', 'Consolas', 'Monaco', monospace;
+    background: rgba(0, 0, 0, 0.02);
+}
+
+/* Dark theme for reasoning block */
+body.dark .reasoning-block {
+    background: rgba(255, 255, 255, 0.02);
+}
+
+body.dark .reasoning-content {
+    color: rgba(255, 255, 255, 0.7);
+    background: rgba(0, 0, 0, 0.2);
+}
+
+/* Message text container (used with reasoning) */
+.message-text {
+    margin-top: 8px;
+}
+
+/* Print styles */
+@media print {
+    body {
+        background: white;
+        color: black;
+    }
+
+    .copy-btn {
+        display: none;
+    }
+
+    .reasoning-block {
+        break-inside: avoid;
+    }
+}

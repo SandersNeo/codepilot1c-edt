@@ -1,0 +1,291 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?eclipse version="3.4"?>
+<plugin>
+    <!-- Preference pages -->
+    <extension point="org.eclipse.ui.preferencePages">
+        <page
+            id="com.codepilot1c.ui.preferences.VibePreferencePage"
+            name="%preferences.vibe.name"
+            class="com.codepilot1c.ui.preferences.VibePreferencePage">
+        </page>
+        <page
+            id="com.codepilot1c.ui.preferences.ProvidersPreferencePage"
+            name="%preferences.providers.name"
+            category="com.codepilot1c.ui.preferences.VibePreferencePage"
+            class="com.codepilot1c.ui.preferences.ProvidersPreferencePage">
+        </page>
+        <page
+            id="com.codepilot1c.ui.preferences.EmbeddingPreferencePage"
+            name="%preferences.embedding.name"
+            category="com.codepilot1c.ui.preferences.VibePreferencePage"
+            class="com.codepilot1c.ui.preferences.EmbeddingPreferencePage">
+        </page>
+        <page
+            id="com.codepilot1c.ui.preferences.McpServersPreferencePage"
+            name="%preferences.mcpServers.name"
+            category="com.codepilot1c.ui.preferences.VibePreferencePage"
+            class="com.codepilot1c.ui.preferences.McpServersPreferencePage">
+        </page>
+    </extension>
+
+    <!-- Views -->
+    <extension point="org.eclipse.ui.views">
+        <category
+            id="com.codepilot1c.ui.category"
+            name="%category.vibe.name">
+        </category>
+        <view
+            id="com.codepilot1c.ui.views.ChatView"
+            name="%view.chat.name"
+            icon="icons/vibe16.png"
+            category="com.codepilot1c.ui.category"
+            class="com.codepilot1c.ui.views.ChatView"
+            allowMultiple="false">
+        </view>
+        <view
+            id="com.codepilot1c.ui.views.AgentView"
+            name="%view.agent.name"
+            icon="icons/vibe16.png"
+            category="com.codepilot1c.ui.category"
+            class="com.codepilot1c.ui.views.AgentView"
+            allowMultiple="false">
+        </view>
+    </extension>
+
+    <!-- Perspective extensions -->
+    <extension point="org.eclipse.ui.perspectiveExtensions">
+        <perspectiveExtension targetID="*">
+            <viewShortcut id="com.codepilot1c.ui.views.ChatView"/>
+        </perspectiveExtension>
+    </extension>
+
+    <!-- Commands -->
+    <extension point="org.eclipse.ui.commands">
+        <category
+            id="com.codepilot1c.ui.commands.category"
+            name="%commands.category.name">
+        </category>
+        <command
+            id="com.codepilot1c.ui.commands.OpenChat"
+            name="%command.openChat.name"
+            description="%command.openChat.description"
+            categoryId="com.codepilot1c.ui.commands.category">
+        </command>
+        <command
+            id="com.codepilot1c.ui.commands.ExplainCode"
+            name="%command.explainCode.name"
+            description="%command.explainCode.description"
+            categoryId="com.codepilot1c.ui.commands.category">
+        </command>
+        <command
+            id="com.codepilot1c.ui.commands.GenerateCode"
+            name="%command.generateCode.name"
+            description="%command.generateCode.description"
+            categoryId="com.codepilot1c.ui.commands.category">
+        </command>
+        <command
+            id="com.codepilot1c.ui.commands.FixCode"
+            name="%command.fixCode.name"
+            description="%command.fixCode.description"
+            categoryId="com.codepilot1c.ui.commands.category">
+        </command>
+        <command
+            id="com.codepilot1c.ui.commands.CriticiseCode"
+            name="%command.criticiseCode.name"
+            description="%command.criticiseCode.description"
+            categoryId="com.codepilot1c.ui.commands.category">
+        </command>
+        <command
+            id="com.codepilot1c.ui.commands.AddCode"
+            name="%command.addCode.name"
+            description="%command.addCode.description"
+            categoryId="com.codepilot1c.ui.commands.category">
+        </command>
+        <command
+            id="com.codepilot1c.ui.commands.GenerateDocComments"
+            name="%command.generateDocComments.name"
+            description="%command.generateDocComments.description"
+            categoryId="com.codepilot1c.ui.commands.category">
+        </command>
+        <command
+            id="com.codepilot1c.ui.commands.IndexCodebase"
+            name="%command.indexCodebase.name"
+            description="%command.indexCodebase.description"
+            categoryId="com.codepilot1c.ui.commands.category">
+        </command>
+        <command
+            id="com.codepilot1c.ui.commands.DumpEdtDiagnostics"
+            name="%command.dumpEdtDiagnostics.name"
+            description="%command.dumpEdtDiagnostics.description"
+            categoryId="com.codepilot1c.ui.commands.category">
+        </command>
+    </extension>
+
+    <!-- Handlers -->
+    <extension point="org.eclipse.ui.handlers">
+        <handler
+            commandId="com.codepilot1c.ui.commands.OpenChat"
+            class="com.codepilot1c.ui.handlers.OpenChatHandler">
+        </handler>
+        <handler
+            commandId="com.codepilot1c.ui.commands.ExplainCode"
+            class="com.codepilot1c.ui.handlers.ExplainCodeHandler">
+        </handler>
+        <handler
+            commandId="com.codepilot1c.ui.commands.GenerateCode"
+            class="com.codepilot1c.ui.handlers.GenerateCodeHandler">
+        </handler>
+        <handler
+            commandId="com.codepilot1c.ui.commands.FixCode"
+            class="com.codepilot1c.ui.handlers.FixCodeHandler">
+        </handler>
+        <handler
+            commandId="com.codepilot1c.ui.commands.CriticiseCode"
+            class="com.codepilot1c.ui.handlers.CriticiseCodeHandler">
+        </handler>
+        <handler
+            commandId="com.codepilot1c.ui.commands.AddCode"
+            class="com.codepilot1c.ui.handlers.AddCodeHandler">
+        </handler>
+        <handler
+            commandId="com.codepilot1c.ui.commands.GenerateDocComments"
+            class="com.codepilot1c.ui.handlers.GenerateDocCommentsHandler">
+        </handler>
+        <handler
+            commandId="com.codepilot1c.ui.commands.IndexCodebase"
+            class="com.codepilot1c.ui.handlers.IndexCodebaseHandler">
+        </handler>
+        <handler
+            commandId="com.codepilot1c.ui.commands.DumpEdtDiagnostics"
+            class="com.codepilot1c.ui.handlers.DumpEdtDiagnosticsHandler">
+        </handler>
+    </extension>
+
+    <!-- Key bindings -->
+    <extension point="org.eclipse.ui.bindings">
+        <key
+            commandId="com.codepilot1c.ui.commands.OpenChat"
+            schemeId="org.eclipse.ui.defaultAcceleratorConfiguration"
+            sequence="M1+M2+V">
+        </key>
+        <!-- AI Code Commands -->
+        <key
+            commandId="com.codepilot1c.ui.commands.FixCode"
+            schemeId="org.eclipse.ui.defaultAcceleratorConfiguration"
+            sequence="M2+M3+F">
+        </key>
+        <key
+            commandId="com.codepilot1c.ui.commands.CriticiseCode"
+            schemeId="org.eclipse.ui.defaultAcceleratorConfiguration"
+            sequence="M2+M3+R">
+        </key>
+        <key
+            commandId="com.codepilot1c.ui.commands.AddCode"
+            schemeId="org.eclipse.ui.defaultAcceleratorConfiguration"
+            sequence="M2+M3+A">
+        </key>
+        <key
+            commandId="com.codepilot1c.ui.commands.GenerateDocComments"
+            schemeId="org.eclipse.ui.defaultAcceleratorConfiguration"
+            sequence="M2+M3+D">
+        </key>
+    </extension>
+
+    <!-- Menus -->
+    <extension point="org.eclipse.ui.menus">
+        <!-- Main menu -->
+        <menuContribution locationURI="menu:org.eclipse.ui.main.menu?after=additions">
+            <menu
+                id="com.codepilot1c.ui.menu"
+                label="%menu.vibe.label"
+                mnemonic="V">
+                <command
+                    commandId="com.codepilot1c.ui.commands.OpenChat"
+                    style="push">
+                </command>
+                <separator name="separator1" visible="true"/>
+                <command
+                    commandId="com.codepilot1c.ui.commands.ExplainCode"
+                    style="push">
+                </command>
+                <command
+                    commandId="com.codepilot1c.ui.commands.GenerateCode"
+                    style="push">
+                </command>
+                <separator name="separator2" visible="true"/>
+                <command
+                    commandId="com.codepilot1c.ui.commands.IndexCodebase"
+                    style="push">
+                </command>
+            </menu>
+        </menuContribution>
+
+        <!-- Toolbar -->
+        <menuContribution locationURI="toolbar:org.eclipse.ui.main.toolbar?after=additions">
+            <toolbar id="com.codepilot1c.ui.toolbar">
+                <command
+                    commandId="com.codepilot1c.ui.commands.OpenChat"
+                    icon="icons/vibe16.png"
+                    tooltip="%command.openChat.tooltip"
+                    style="push">
+                </command>
+            </toolbar>
+        </menuContribution>
+
+        <!-- Status Bar -->
+        <menuContribution locationURI="toolbar:org.eclipse.ui.trim.status">
+            <control
+                class="com.codepilot1c.ui.statusbar.VibeStatusBarControl"
+                id="com.codepilot1c.ui.statusbar">
+            </control>
+        </menuContribution>
+
+        <!-- Context menu for BSL editor -->
+        <menuContribution locationURI="popup:#TextEditorContext?after=additions">
+            <menu
+                id="com.codepilot1c.ui.contextMenu"
+                label="%menu.copilot.label">
+                <command
+                    commandId="com.codepilot1c.ui.commands.ExplainCode"
+                    style="push">
+                </command>
+                <command
+                    commandId="com.codepilot1c.ui.commands.FixCode"
+                    style="push">
+                </command>
+                <command
+                    commandId="com.codepilot1c.ui.commands.CriticiseCode"
+                    style="push">
+                </command>
+                <separator name="separator1" visible="true"/>
+                <command
+                    commandId="com.codepilot1c.ui.commands.AddCode"
+                    style="push">
+                </command>
+                <command
+                    commandId="com.codepilot1c.ui.commands.GenerateDocComments"
+                    style="push">
+                </command>
+            </menu>
+        </menuContribution>
+
+        <!-- Context menu for Project Explorer on BSL files -->
+        <menuContribution locationURI="popup:org.eclipse.ui.navigator.ProjectExplorer#PopupMenu?after=additions">
+            <menu
+                id="com.codepilot1c.ui.explorerMenu"
+                label="%menu.copilot.label">
+                <visibleWhen checkEnabled="false">
+                    <iterate ifEmpty="false" operator="or">
+                        <adapt type="org.eclipse.core.resources.IFile">
+                            <test property="org.eclipse.core.resources.extension" value="bsl"/>
+                        </adapt>
+                    </iterate>
+                </visibleWhen>
+                <command
+                    commandId="com.codepilot1c.ui.commands.ExplainCode"
+                    style="push">
+                </command>
+            </menu>
+        </menuContribution>
+    </extension>
+</plugin>

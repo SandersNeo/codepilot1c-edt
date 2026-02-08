@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<site>
+   <feature id="com.codepilot1c.feature" version="0.0.0">
+      <category name="copilot"/>
+   </feature>
+
+	   <category-def name="copilot" label="1C Copilot">
+	      <description>
+	         AI-powered development tools for 1C:Enterprise.
+	         Includes code generation and AI chat assistance.
+	      </description>
+	   </category-def>
+</site>

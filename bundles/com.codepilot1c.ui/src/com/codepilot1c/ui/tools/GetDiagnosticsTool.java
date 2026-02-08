@@ -1,0 +1,144 @@
+/*
+ * Copyright (c) 2024 Example
+ * This program and the accompanying materials are made available under
+ * the terms of the Eclipse Public License 2.0
+ */
+package com.codepilot1c.ui.tools;
+
+import java.util.Map;
+import java.util.concurrent.CompletableFuture;
+
+import com.codepilot1c.core.logging.VibeLogger;
+import com.codepilot1c.core.tools.ITool;
+import com.codepilot1c.core.tools.ToolResult;
+import com.codepilot1c.ui.diagnostics.EdtDiagnostic.Severity;
+import com.codepilot1c.ui.diagnostics.EdtDiagnosticsCollector;
+import com.codepilot1c.ui.diagnostics.EdtDiagnosticsCollector.DiagnosticsQuery;
+import com.codepilot1c.ui.diagnostics.EdtDiagnosticsCollector.DiagnosticsResult;
+
+/**
+ * Tool for getting EDT diagnostics (errors, warnings) for the active editor or a specific file.
+ *
+ * <p>This tool allows the LLM to retrieve compiler/checker diagnostics from 1C EDT,
+ * enabling intelligent auto-fix workflows.</p>
+ *
+ * <p>Example usage by LLM:</p>
+ * <ul>
+ * <li>"get_diagnostics" → get errors from active editor</li>
+ * <li>"get_diagnostics(severity='warning')" → get errors and warnings</li>
+ * <li>"get_diagnostics(path='/Project/Module.bsl')" → get diagnostics for specific file</li>
+ * </ul>
+ */
+public class GetDiagnosticsTool implements ITool {
+
+    private static final VibeLogger.CategoryLogger LOG = VibeLogger.forClass(GetDiagnosticsTool.class);
+
+    private static final String SCHEMA = """
+            {
+                "type": "object",
+                "properties": {
+                    "path": {
+                        "type": "string",
+                        "description": "Путь к файлу (workspace-relative). Если не указан — используется активный редактор."
+                    },
+                    "severity": {
+                        "type": "string",
+                        "enum": ["error", "warning", "info"],
+                        "description": "Минимальный уровень серьёзности: error (только ошибки), warning (ошибки и предупреждения), info (все). По умолчанию: error"
+                    },
+                    "max_items": {
+                        "type": "integer",
+                        "description": "Максимальное количество диагностик. По умолчанию: 50"
+                    },
+                    "wait_ms": {
+                        "type": "integer",
+                        "description": "Время ожидания пересчёта диагностик в мс (0-2000). По умолчанию: 0"
+                    }
+                },
+                "required": []
+            }
+            """; //$NON-NLS-1$
+
+    @Override
+    public String getName() {
+        return "get_diagnostics"; //$NON-NLS-1$
+    }
+
+    @Override
+    public String getDescription() {
+        return "Получить диагностики EDT (ошибки компиляции, предупреждения) для текущего файла. " + //$NON-NLS-1$
+               "Используй после внесения изменений для проверки корректности кода."; //$NON-NLS-1$
+    }
+
+    @Override
+    public String getParameterSchema() {
+        return SCHEMA;
+    }
+
+    @Override
+    public CompletableFuture<ToolResult> execute(Map<String, Object> parameters) {
+        // Parse parameters
+        String path = (String) parameters.get("path"); //$NON-NLS-1$
+        String severityStr = (String) parameters.getOrDefault("severity", "error"); //$NON-NLS-1$ //$NON-NLS-2$
+        int maxItems = getIntParam(parameters, "max_items", 50); //$NON-NLS-1$
+        long waitMs = getIntParam(parameters, "wait_ms", 0); //$NON-NLS-1$
+
+        // Validate parameters
+        if (maxItems < 1) maxItems = 1;
+        if (maxItems > 200) maxItems = 200;
+        if (waitMs < 0) waitMs = 0;
+        if (waitMs > 2000) waitMs = 2000;
+
+        // Parse severity
+        Severity minSeverity = parseSeverity(severityStr);
+
+        DiagnosticsQuery query = new DiagnosticsQuery(minSeverity, maxItems, true, waitMs);
+
+        LOG.debug("get_diagnostics: path=%s, severity=%s, max=%d, wait=%d", //$NON-NLS-1$
+                path, minSeverity, maxItems, waitMs);
+
+        EdtDiagnosticsCollector collector = EdtDiagnosticsCollector.getInstance();
+
+        CompletableFuture<DiagnosticsResult> resultFuture;
+
+        if (path != null && !path.isBlank()) {
+            // Collect from specific file
+            resultFuture = collector.collectFromFile(path, query);
+        } else {
+            // Collect from active editor
+            resultFuture = collector.collectFromActiveEditor(query);
+        }
+
+        return resultFuture.thenApply(result -> {
+            String formatted = result.formatForLlm();
+            LOG.debug("get_diagnostics result: %d errors, %d warnings", //$NON-NLS-1$
+                    result.errorCount(), result.warningCount());
+            return ToolResult.success(formatted);
+        }).exceptionally(e -> {
+            LOG.error("get_diagnostics failed: %s", e.getMessage()); //$NON-NLS-1$
+            return ToolResult.failure("Ошибка получения диагностик: " + e.getMessage()); //$NON-NLS-1$
+        });
+    }
+
+    private Severity parseSeverity(String str) {
+        if (str == null) return Severity.ERROR;
+        return switch (str.toLowerCase()) {
+            case "warning", "warn" -> Severity.WARNING; //$NON-NLS-1$ //$NON-NLS-2$
+            case "info", "all" -> Severity.INFO; //$NON-NLS-1$ //$NON-NLS-2$
+            default -> Severity.ERROR;
+        };
+    }
+
+    private int getIntParam(Map<String, Object> params, String key, int defaultValue) {
+        Object value = params.get(key);
+        if (value == null) return defaultValue;
+        if (value instanceof Number num) {
+            return num.intValue();
+        }
+        try {
+            return Integer.parseInt(String.valueOf(value));
+        } catch (NumberFormatException e) {
+            return defaultValue;
+        }
+    }
+}

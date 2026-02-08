@@ -1,0 +1,15 @@
+# Maven/Tycho
+**/target/
+.m2/
+
+# Codex / agent artifacts
+.codex/
+.claude/
+
+# IDE / OS
+.idea/
+.project
+.classpath
+.settings/
+.DS_Store
+

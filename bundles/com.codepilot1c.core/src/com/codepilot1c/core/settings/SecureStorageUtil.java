@@ -1,0 +1,116 @@
+/*
+ * Copyright (c) 2024 Example
+ * This program and the accompanying materials are made available under
+ * the terms of the Eclipse Public License 2.0
+ */
+package com.codepilot1c.core.settings;
+
+import org.eclipse.equinox.security.storage.ISecurePreferences;
+import org.eclipse.equinox.security.storage.SecurePreferencesFactory;
+import org.eclipse.equinox.security.storage.StorageException;
+
+import com.codepilot1c.core.internal.VibeCorePlugin;
+
+/**
+ * Utility class for secure storage of sensitive data like API keys.
+ *
+ * <p>Uses Eclipse Secure Storage to encrypt sensitive information.</p>
+ */
+public final class SecureStorageUtil {
+
+    private static final String SECURE_NODE_PATH = "/" + VibeCorePlugin.PLUGIN_ID; //$NON-NLS-1$
+
+    private SecureStorageUtil() {
+        // Utility class
+    }
+
+    /**
+     * Stores a value securely.
+     *
+     * @param key   the key
+     * @param value the value to store
+     * @return true if stored successfully
+     */
+    public static boolean storeSecurely(String key, String value) {
+        try {
+            ISecurePreferences root = SecurePreferencesFactory.getDefault();
+            ISecurePreferences node = root.node(SECURE_NODE_PATH);
+            node.put(key, value, true); // true = encrypt
+            node.flush();
+            return true;
+        } catch (Exception e) {
+            VibeCorePlugin.logError("Failed to store secure value for key: " + key, e); //$NON-NLS-1$
+            return false;
+        }
+    }
+
+    /**
+     * Retrieves a value from secure storage.
+     *
+     * @param key          the key
+     * @param defaultValue the default value if not found
+     * @return the stored value or default
+     */
+    public static String retrieveSecurely(String key, String defaultValue) {
+        try {
+            ISecurePreferences root = SecurePreferencesFactory.getDefault();
+            ISecurePreferences node = root.node(SECURE_NODE_PATH);
+            return node.get(key, defaultValue);
+        } catch (StorageException e) {
+            // Log error: "Failed to retrieve secure value for key: {}", key, e //$NON-NLS-1$
+            return defaultValue;
+        }
+    }
+
+    /**
+     * Removes a value from secure storage.
+     *
+     * @param key the key to remove
+     */
+    public static void removeSecurely(String key) {
+        try {
+            ISecurePreferences root = SecurePreferencesFactory.getDefault();
+            ISecurePreferences node = root.node(SECURE_NODE_PATH);
+            node.remove(key);
+            node.flush();
+        } catch (Exception e) {
+            // Log error: "Failed to remove secure value for key: {}", key, e //$NON-NLS-1$
+        }
+    }
+
+    /**
+     * Checks if secure storage is available.
+     *
+     * @return true if available
+     */
+    public static boolean isAvailable() {
+        try {
+            ISecurePreferences root = SecurePreferencesFactory.getDefault();
+            return root != null;
+        } catch (Exception e) {
+            // Log warn: "Secure storage not available", e //$NON-NLS-1$
+            return false;
+        }
+    }
+
+    /**
+     * Stores an API key securely.
+     *
+     * @param providerId the provider ID
+     * @param apiKey     the API key
+     * @return true if stored successfully
+     */
+    public static boolean storeApiKey(String providerId, String apiKey) {
+        return storeSecurely(providerId + ".apiKey", apiKey); //$NON-NLS-1$
+    }
+
+    /**
+     * Retrieves an API key from secure storage.
+     *
+     * @param providerId the provider ID
+     * @return the API key or empty string if not found
+     */
+    public static String retrieveApiKey(String providerId) {
+        return retrieveSecurely(providerId + ".apiKey", ""); //$NON-NLS-1$ //$NON-NLS-2$
+    }
+}

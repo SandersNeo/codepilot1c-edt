@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?eclipse version="3.4"?>
+<schema targetNamespace="com.codepilot1c.core.toolProvider"
+        xmlns="http://www.w3.org/2001/XMLSchema">
+    <annotation>
+        <appInfo>
+            <meta.schema plugin="com.codepilot1c.core" id="toolProvider" name="%extensionPoint.toolProvider.name"/>
+        </appInfo>
+        <documentation>
+            Extension point for contributing additional tools (ITool implementations).
+            Used by overlay bundles (e.g. Pro) to add tools without modifying OSS core.
+        </documentation>
+    </annotation>
+
+    <element name="extension">
+        <complexType>
+            <sequence minOccurs="0" maxOccurs="unbounded">
+                <element ref="tool"/>
+            </sequence>
+            <attribute name="point" type="string" use="required">
+                <annotation>
+                    <documentation>
+                        The fully qualified extension point id.
+                    </documentation>
+                </annotation>
+            </attribute>
+            <attribute name="id" type="string">
+                <annotation>
+                    <documentation>
+                        Optional extension id.
+                    </documentation>
+                </annotation>
+            </attribute>
+            <attribute name="name" type="string">
+                <annotation>
+                    <documentation>
+                        Optional extension name.
+                    </documentation>
+                </annotation>
+            </attribute>
+        </complexType>
+    </element>
+
+    <element name="tool">
+        <complexType>
+            <attribute name="class" type="string" use="required">
+                <annotation>
+                    <documentation>
+                        Fully qualified class name implementing com.codepilot1c.core.tools.ITool.
+                    </documentation>
+                    <appInfo>
+                        <meta.attribute kind="java" basedOn=":com.codepilot1c.core.tools.ITool"/>
+                    </appInfo>
+                </annotation>
+            </attribute>
+        </complexType>
+    </element>
+</schema>
+

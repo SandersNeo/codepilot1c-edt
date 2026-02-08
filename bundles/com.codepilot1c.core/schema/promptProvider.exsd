@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?eclipse version="3.4"?>
+<schema targetNamespace="com.codepilot1c.core.promptProvider"
+        xmlns="http://www.w3.org/2001/XMLSchema">
+    <annotation>
+        <appInfo>
+            <meta.schema plugin="com.codepilot1c.core" id="promptProvider" name="%extensionPoint.promptProvider.name"/>
+        </appInfo>
+        <documentation>
+            Extension point for overriding system prompt additions used by agent profiles.
+            If no provider is contributed, OSS default prompts are used.
+        </documentation>
+    </annotation>
+
+    <element name="extension">
+        <complexType>
+            <sequence minOccurs="0" maxOccurs="unbounded">
+                <element ref="provider"/>
+            </sequence>
+            <attribute name="point" type="string" use="required"/>
+            <attribute name="id" type="string"/>
+            <attribute name="name" type="string"/>
+        </complexType>
+    </element>
+
+    <element name="provider">
+        <complexType>
+            <attribute name="class" type="string" use="required">
+                <annotation>
+                    <documentation>
+                        Fully qualified class name implementing com.codepilot1c.core.agent.prompts.IPromptProvider.
+                    </documentation>
+                    <appInfo>
+                        <meta.attribute kind="java" basedOn=":com.codepilot1c.core.agent.prompts.IPromptProvider"/>
+                    </appInfo>
+                </annotation>
+            </attribute>
+        </complexType>
+    </element>
+</schema>
+
