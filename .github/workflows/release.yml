@@ -38,6 +38,7 @@ jobs:
         run: |
           mkdir -p repositories/com.codepilot1c.update/target/repository/site
           cp site/index.html repositories/com.codepilot1c.update/target/repository/site/index.html
+          cp site/root-index.html repositories/com.codepilot1c.update/target/repository/index.html
 
       - name: Configure Pages
         uses: actions/configure-pages@v5
