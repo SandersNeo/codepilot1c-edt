@@ -1,7 +1,9 @@
 /*
  * Copyright (c) 2024 Example
- * This program and the accompanying materials are made available under
- * the terms of the Eclipse Public License 2.0
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, version 3.
+ * SPDX-License-Identifier: AGPL-3.0-only
  */
 package com.codepilot1c.ui.views;
 
@@ -10,7 +12,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.swt.SWT;
@@ -28,7 +29,6 @@ import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Text;
 import org.eclipse.ui.part.ViewPart;
 
-import com.codepilot1c.core.context7.Context7DocumentationService;
 import com.codepilot1c.core.diff.CodeDiffUtils;
 import com.codepilot1c.core.logging.VibeLogger;
 import com.codepilot1c.core.model.LlmMessage;
@@ -39,7 +39,6 @@ import com.codepilot1c.core.model.ToolCall;
 import com.codepilot1c.core.model.ToolDefinition;
 import com.codepilot1c.core.provider.ILlmProvider;
 import com.codepilot1c.core.provider.LlmProviderRegistry;
-import com.codepilot1c.core.rag.RagContextBuilder.RagContext;
 import com.codepilot1c.core.rag.RagService;
 import com.codepilot1c.core.tools.ITool;
 import com.codepilot1c.core.tools.ToolRegistry;
@@ -104,11 +103,6 @@ public class ChatView extends ViewPart {
     private boolean previewModeEnabled = false;
     /** Current set of proposed changes awaiting review */
     private ProposedChangeSet currentProposedChanges;
-
-    /** Context7 documentation service for automatic documentation enrichment */
-    private final Context7DocumentationService context7Service = Context7DocumentationService.getInstance();
-    /** Flag indicating if Context7 service has been initialized for this session */
-    private volatile boolean context7Initialized = false;
 
     @Override
     public void createPartControl(Composite parent) {
@@ -359,42 +353,14 @@ public class ChatView extends ViewPart {
             return;
         }
 
-        // Get editor context (fast, UI thread is OK)
-        CodeApplicationService.SelectionInfo editorContext = CodeApplicationService.getInstance().getCurrentSelection();
-
         // Add user message to UI
         appendUserMessage(userInput);
         inputField.setText(""); //$NON-NLS-1$
 
-        // Set processing IMMEDIATELY to show spinner (before heavy operations)
-        setProcessing(true, "Подготовка контекста..."); //$NON-NLS-1$
-
-        // Move heavy operations (Context7, RAG) to background thread
-        CompletableFuture.supplyAsync(() -> {
-            // This runs in background - won't freeze UI
-            return buildMessageWithContext(userInput, editorContext);
-        }).thenAcceptAsync(messageWithContext -> {
-            // Back to UI thread to update conversation and start request
-            conversationHistory.add(LlmMessage.user(messageWithContext));
-            setProcessingStage("Отправка запроса..."); //$NON-NLS-1$
-            startConversationLoop(provider);
-        }, runnable -> {
-            // Execute on UI thread
-            Display display = getDisplay();
-            if (display != null && !display.isDisposed()) {
-                display.asyncExec(runnable);
-            }
-        }).exceptionally(error -> {
-            LOG.error("Error preparing message context: %s", error.getMessage()); //$NON-NLS-1$
-            Display display = getDisplay();
-            if (display != null && !display.isDisposed()) {
-                display.asyncExec(() -> {
-                    setProcessing(false);
-                    appendSystemMessage("Ошибка подготовки контекста: " + error.getMessage()); //$NON-NLS-1$
-                });
-            }
-            return null;
-        });
+        // No automatic context preparation: send the user message as-is.
+        setProcessing(true, "Отправка запроса..."); //$NON-NLS-1$
+        conversationHistory.add(LlmMessage.user(userInput));
+        startConversationLoop(provider);
     }
 
     /**
@@ -1515,155 +1481,6 @@ public class ChatView extends ViewPart {
             """); //$NON-NLS-1$
 
         return prompt.toString();
-    }
-
-    /**
-     * Builds user message with editor context and RAG semantic search results.
-     */
-    private String buildMessageWithContext(String userMessage, CodeApplicationService.SelectionInfo editorContext) {
-        StringBuilder sb = new StringBuilder();
-
-        // Initialize Context7 service on first message (lazy initialization)
-        initializeContext7ServiceIfNeeded();
-
-        // Get Context7 documentation if needed (Variant B+A: preload + enrichment)
-        String context7Docs = getContext7Documentation(userMessage);
-        if (context7Docs != null && !context7Docs.isEmpty()) {
-            sb.append(context7Docs).append("\n\n");
-        }
-
-        // Try to get RAG context (semantic search results)
-        RagService ragService = RagService.getInstance();
-        if (ragService.isReady()) {
-            RagContext ragContext = ragService.buildContext(userMessage);
-            if (ragContext.hasContext()) {
-                sb.append("### Релевантный код из кодовой базы\n\n"); //$NON-NLS-1$
-                // Add RAG context (already formatted with file paths and code)
-                for (var chunk : ragContext.getIncludedChunks()) {
-                    sb.append("**Файл:** `").append(chunk.getFilePath()); //$NON-NLS-1$
-                    sb.append("` (строки ").append(chunk.getStartLine()); //$NON-NLS-1$
-                    sb.append("-").append(chunk.getEndLine()).append(")\n"); //$NON-NLS-1$ //$NON-NLS-2$
-                    if (chunk.getSymbolName() != null && !chunk.getSymbolName().isEmpty()) {
-                        sb.append("**Символ:** ").append(chunk.getSymbolName()).append("\n"); //$NON-NLS-1$ //$NON-NLS-2$
-                    }
-                    sb.append("```bsl\n").append(chunk.getContent()).append("\n```\n\n"); //$NON-NLS-1$ //$NON-NLS-2$
-                }
-                sb.append("\n"); //$NON-NLS-1$
-            }
-        }
-
-        // Add editor context if available
-        if (editorContext != null && editorContext.hasDocument()) {
-            sb.append("### Текущий файл в редакторе\n\n"); //$NON-NLS-1$
-
-            // Add file info and extract project path
-            if (editorContext.getFileName() != null) {
-                String fileName = editorContext.getFileName();
-                sb.append("**Файл:** `").append(fileName).append("`\n"); //$NON-NLS-1$ //$NON-NLS-2$
-
-                // Extract project root path (path before /src/)
-                int srcIndex = fileName.indexOf("/src/"); //$NON-NLS-1$
-                if (srcIndex > 0) {
-                    String projectRoot = fileName.substring(0, srcIndex);
-                    String projectSrcPath = projectRoot + "/src"; //$NON-NLS-1$
-                    sb.append("**Корень проекта:** `").append(projectRoot).append("`\n"); //$NON-NLS-1$ //$NON-NLS-2$
-                    sb.append("**Путь к исходникам:** `").append(projectSrcPath).append("`\n"); //$NON-NLS-1$ //$NON-NLS-2$
-                }
-                sb.append("\n"); //$NON-NLS-1$
-            }
-
-            // Add selection if present
-            if (editorContext.hasSelection() && editorContext.getSelectedText() != null) {
-                sb.append("**Выделенный код:**\n```bsl\n"); //$NON-NLS-1$
-                sb.append(editorContext.getSelectedText());
-                sb.append("\n```\n\n"); //$NON-NLS-1$
-            }
-
-            // Add document content (truncated if too large)
-            String docText = editorContext.getDocumentText();
-            if (docText != null && !docText.isEmpty()) {
-                // Truncate to avoid exceeding token limits
-                int maxLength = 6000; // ~1500 tokens (reduced to make room for RAG context)
-                if (docText.length() > maxLength) {
-                    // If there's a selection, focus around it
-                    if (editorContext.hasSelection()) {
-                        int start = Math.max(0, editorContext.getOffset() - maxLength / 2);
-                        int end = Math.min(docText.length(), editorContext.getOffset() + editorContext.getLength() + maxLength / 2);
-                        docText = "...\n" + docText.substring(start, end) + "\n..."; //$NON-NLS-1$ //$NON-NLS-2$
-                    } else {
-                        docText = docText.substring(0, maxLength) + "\n... (файл обрезан)"; //$NON-NLS-1$
-                    }
-                }
-                sb.append("**Содержимое файла:**\n```bsl\n"); //$NON-NLS-1$
-                sb.append(docText);
-                sb.append("\n```\n\n"); //$NON-NLS-1$
-            }
-        }
-
-        // Add user message
-        sb.append("### Вопрос пользователя\n\n"); //$NON-NLS-1$
-        sb.append(userMessage);
-
-        return sb.toString();
-    }
-
-    /**
-     * Initializes Context7 documentation service on first message.
-     * Loads base documentation asynchronously.
-     */
-    private void initializeContext7ServiceIfNeeded() {
-        if (context7Initialized) {
-            return;
-        }
-        context7Initialized = true;
-
-        LOG.info("Initializing Context7 documentation service..."); //$NON-NLS-1$
-
-        // Configure LLM provider for query classification
-        ILlmProvider provider = LlmProviderRegistry.getInstance().getActiveProvider();
-        if (provider != null && provider.isConfigured()) {
-            context7Service.setLlmProvider(provider);
-            LOG.info("Context7 service: LLM provider configured for query classification"); //$NON-NLS-1$
-        } else {
-            LOG.warn("Context7 service: No LLM provider available for query classification"); //$NON-NLS-1$
-        }
-
-        // Start initialization asynchronously (don't block first message)
-        context7Service.initialize()
-            .thenRun(() -> LOG.info("Context7 service initialized successfully")) //$NON-NLS-1$
-            .exceptionally(e -> {
-                LOG.warn("Context7 service initialization failed: %s", e.getMessage()); //$NON-NLS-1$
-                return null;
-            });
-    }
-
-    /**
-     * Gets Context7 documentation for the user message (on-demand mode).
-     * Fetches documentation only when query triggers require it.
-     *
-     * @param userMessage the user's message
-     * @return documentation context or empty string
-     */
-    private String getContext7Documentation(String userMessage) {
-        try {
-            // LLM-based classification decides if documentation is needed
-            // enrichWithDocumentation handles classification internally
-            LOG.debug("Requesting Context7 documentation for: %s", //$NON-NLS-1$
-                    userMessage.length() > 50 ? userMessage.substring(0, 50) + "..." : userMessage); //$NON-NLS-1$
-
-            // Wait up to 35 seconds for classification + documentation
-            // (20 sec classification + 12 sec documentation + 3 sec buffer)
-            String enriched = context7Service.enrichWithDocumentation(userMessage)
-                    .get(35, TimeUnit.SECONDS);
-            if (enriched != null && !enriched.isEmpty()) {
-                LOG.debug("Context7 documentation received: %d chars", enriched.length()); //$NON-NLS-1$
-                return enriched;
-            }
-        } catch (Exception e) {
-            LOG.debug("Documentation enrichment timed out or failed: %s", e.getMessage()); //$NON-NLS-1$
-        }
-
-        return ""; //$NON-NLS-1$
     }
 
     private void handleError(Throwable error) {

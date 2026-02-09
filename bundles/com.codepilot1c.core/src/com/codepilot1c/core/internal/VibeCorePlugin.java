@@ -1,7 +1,9 @@
 /*
  * Copyright (c) 2024 Example
- * This program and the accompanying materials are made available under
- * the terms of the Eclipse Public License 2.0
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, version 3.
+ * SPDX-License-Identifier: AGPL-3.0-only
  */
 package com.codepilot1c.core.internal;
 
@@ -96,13 +98,6 @@ public class VibeCorePlugin extends Plugin {
                 logWarn("Error disposing HTTP client factory", e); //$NON-NLS-1$
             }
             httpClientFactory = null;
-        }
-
-        // Dispose Context7 QueryClassifier
-        try {
-            com.codepilot1c.core.context7.QueryClassifier.dispose();
-        } catch (Exception e) {
-            logWarn("Error disposing QueryClassifier", e); //$NON-NLS-1$
         }
 
         try {

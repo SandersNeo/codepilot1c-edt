@@ -1,7 +1,9 @@
 /*
  * Copyright (c) 2024 Example
- * This program and the accompanying materials are made available under
- * the terms of the Eclipse Public License 2.0
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, version 3.
+ * SPDX-License-Identifier: AGPL-3.0-only
  */
 package com.codepilot1c.core.agent.profiles;
 
@@ -10,7 +12,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import com.codepilot1c.core.agent.prompts.Context7Instructions;
 import com.codepilot1c.core.agent.prompts.PromptProviderRegistry;
 import com.codepilot1c.core.permissions.PermissionDecision;
 import com.codepilot1c.core.permissions.PermissionRule;
@@ -105,9 +106,9 @@ public class BuildAgentProfile implements AgentProfile {
 
                 ## Доступные инструменты:
                 - Файлы: read_file, edit_file, write_file, glob, grep
-                - Документация: mcp_context_7_query-docs (ОБЯЗАТЕЛЬНО для вопросов о синтаксисе)
+                - Документация: используй MCP-инструменты документации только если пользователь явно попросил "используй документацию"
 
-                """ + Context7Instructions.CONTEXT7_INSTRUCTIONS;
+                """;
         return PromptProviderRegistry.getInstance().getSystemPromptAddition(getId(), defaultPrompt);
     }
 
