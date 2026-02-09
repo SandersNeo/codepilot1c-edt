@@ -1,7 +1,9 @@
 /*
  * Copyright (c) 2024 Example
- * This program and the accompanying materials are made available under
- * the terms of the Eclipse Public License 2.0
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, version 3.
+ * SPDX-License-Identifier: AGPL-3.0-only
  */
 package com.codepilot1c.ui.editor;
 
@@ -15,7 +17,9 @@ import org.eclipse.swt.widgets.Shell;
 import org.eclipse.ui.IEditorPart;
 import org.eclipse.ui.IWorkbenchWindow;
 import org.eclipse.ui.PlatformUI;
+import org.eclipse.ui.IURIEditorInput;
 import org.eclipse.ui.texteditor.ITextEditor;
+import org.eclipse.ui.IFileEditorInput;
 
 import com.codepilot1c.core.diff.CodeChange;
 import com.codepilot1c.core.diff.CodeDiffUtils;
@@ -232,6 +236,16 @@ public class CodeApplicationService {
     private String getEditorFileName(ITextEditor editor) {
         try {
             if (editor.getEditorInput() != null) {
+                // Prefer full path when available (makes prompt context much more useful).
+                if (editor.getEditorInput() instanceof IFileEditorInput fileInput
+                        && fileInput.getFile() != null
+                        && fileInput.getFile().getLocation() != null) {
+                    return fileInput.getFile().getLocation().toOSString();
+                }
+                if (editor.getEditorInput() instanceof IURIEditorInput uriInput
+                        && uriInput.getURI() != null) {
+                    return uriInput.getURI().toString();
+                }
                 return editor.getEditorInput().getName();
             }
         } catch (Exception e) {

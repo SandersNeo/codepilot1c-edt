@@ -1,7 +1,9 @@
 /*******************************************************************************
  * Copyright (c) 2024 Example.
  * All rights reserved. This program and the accompanying materials
- * are made available under the terms of the Eclipse Public License v2.0
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, version 3.
  * which accompanies this distribution, and is available at
  * https://www.eclipse.org/legal/epl-2.0/
  ******************************************************************************/

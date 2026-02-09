@@ -1,7 +1,9 @@
 /*
  * Copyright (c) 2024 Example
- * This program and the accompanying materials are made available under
- * the terms of the Eclipse Public License 2.0
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, version 3.
+ * SPDX-License-Identifier: AGPL-3.0-only
  */
 package com.codepilot1c.core.rag;
 
@@ -220,7 +222,7 @@ public class RagService {
     public RagContext buildContext(String userQuery, int topK) {
         if (!isReady()) {
             LOG.debug("Построение контекста невозможно: RAG не готов"); //$NON-NLS-1$
-            return new RagContext(userQuery, Collections.emptyList(), 0, 0, 0);
+            return new RagContext(userQuery, Collections.emptyList(), Collections.emptyList(), 0, 0, 0);
         }
 
         long startTime = System.currentTimeMillis();
@@ -231,7 +233,7 @@ public class RagService {
 
         long duration = System.currentTimeMillis() - startTime;
         LOG.info("RAG контекст построен: %d чанков, %d токенов за %s", //$NON-NLS-1$
-                context.getIncludedChunks().size(),
+                context.getRenderedChunks().size(),
                 context.getTotalTokens(),
                 LogSanitizer.formatDuration(duration));
 
@@ -252,7 +254,7 @@ public class RagService {
                     long duration = System.currentTimeMillis() - startTime;
                     LOG.info("[%s] RAG контекст построен: %d чанков, %d токенов за %s", //$NON-NLS-1$
                             correlationId,
-                            context.getIncludedChunks().size(),
+                            context.getRenderedChunks().size(),
                             context.getTotalTokens(),
                             LogSanitizer.formatDuration(duration));
                     return context;

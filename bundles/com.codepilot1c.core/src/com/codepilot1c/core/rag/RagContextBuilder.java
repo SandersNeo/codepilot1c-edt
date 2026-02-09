@@ -1,7 +1,9 @@
 /*
  * Copyright (c) 2024 Example
- * This program and the accompanying materials are made available under
- * the terms of the Eclipse Public License 2.0
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, version 3.
+ * SPDX-License-Identifier: AGPL-3.0-only
  */
 package com.codepilot1c.core.rag;
 
@@ -68,6 +70,7 @@ public class RagContextBuilder {
     public RagContext build(List<SearchResult> searchResults, String userQuery, String instructions) {
         StringBuilder contextBuilder = new StringBuilder();
         List<CodeChunk> includedChunks = new ArrayList<>();
+        List<RenderedChunk> renderedChunks = new ArrayList<>();
         int totalTokens = 0;
 
         // Add instructions if provided
@@ -95,21 +98,39 @@ public class RagContextBuilder {
 
         for (SearchResult result : sortedResults) {
             CodeChunk chunk = result.getChunk();
-            String chunkText = formatChunk(chunk);
+            // Format chunk with token-aware truncation of *content* (not the whole template).
+            // This prevents a mismatch where the caller re-renders the full content and
+            // unintentionally exceeds the token budget.
+            String chunkText = formatChunk(chunk, chunk.getContent());
             int chunkTokens = contextWindowManager.estimateTokens(chunkText);
 
             if (contextWindowManager.canFit(totalTokens + chunkTokens)) {
                 contextBuilder.append(chunkText);
                 includedChunks.add(chunk);
                 totalTokens += chunkTokens;
+                renderedChunks.add(new RenderedChunk(chunk, chunk.getContent(), false, chunkTokens));
             } else {
-                // Try to fit a truncated version
-                String truncated = contextWindowManager.truncateToFit(
-                        chunkText, totalTokens);
-                if (truncated != null && !truncated.isEmpty()) {
-                    contextBuilder.append(truncated);
+                // Try to fit a truncated version by truncating only the code content.
+                String overhead = formatChunk(chunk, ""); //$NON-NLS-1$
+                int overheadTokens = contextWindowManager.estimateTokens(overhead);
+                if (!contextWindowManager.canFit(totalTokens + overheadTokens)) {
+                    break;
+                }
+
+                String truncatedContent = contextWindowManager.truncateToFit(
+                        chunk.getContent(), totalTokens + overheadTokens);
+                if (truncatedContent == null || truncatedContent.isEmpty()) {
+                    break;
+                }
+
+                boolean truncated = !truncatedContent.equals(chunk.getContent());
+                String rendered = formatChunk(chunk, truncatedContent);
+                int renderedTokens = contextWindowManager.estimateTokens(rendered);
+                if (contextWindowManager.canFit(totalTokens + renderedTokens)) {
+                    contextBuilder.append(rendered);
                     includedChunks.add(chunk);
-                    totalTokens += contextWindowManager.estimateTokens(truncated);
+                    totalTokens += renderedTokens;
+                    renderedChunks.add(new RenderedChunk(chunk, truncatedContent, truncated, renderedTokens));
                 }
                 break;
             }
@@ -126,6 +147,7 @@ public class RagContextBuilder {
         return new RagContext(
                 contextBuilder.toString(),
                 includedChunks,
+                renderedChunks,
                 totalTokens,
                 searchResults.size(),
                 includedChunks.size()
@@ -143,6 +165,7 @@ public class RagContextBuilder {
     public RagContext buildCompletionContext(String prefix, String suffix, List<SearchResult> relevantChunks) {
         StringBuilder contextBuilder = new StringBuilder();
         List<CodeChunk> includedChunks = new ArrayList<>();
+        List<RenderedChunk> renderedChunks = new ArrayList<>();
         int totalTokens = 0;
 
         // Add relevant context first
@@ -163,6 +186,7 @@ public class RagContextBuilder {
                     contextBuilder.append(chunkComment);
                     includedChunks.add(chunk);
                     totalTokens += chunkTokens;
+                    renderedChunks.add(new RenderedChunk(chunk, chunk.getContent(), false, chunkTokens));
                 }
             }
         }
@@ -208,6 +232,7 @@ public class RagContextBuilder {
         return new RagContext(
                 contextBuilder.toString(),
                 includedChunks,
+                renderedChunks,
                 totalTokens,
                 relevantChunks != null ? relevantChunks.size() : 0,
                 includedChunks.size()
@@ -217,13 +242,17 @@ public class RagContextBuilder {
     /**
      * Formats a code chunk for inclusion in context.
      */
-    private String formatChunk(CodeChunk chunk) {
+    private String formatChunk(CodeChunk chunk, String content) {
+        String symbol = chunk.getSymbolName();
+        if (symbol == null) {
+            symbol = ""; //$NON-NLS-1$
+        }
         return String.format(CHUNK_TEMPLATE,
                 chunk.getFilePath(),
                 chunk.getStartLine(),
                 chunk.getEndLine(),
-                chunk.getSymbolName(),
-                chunk.getContent()
+                symbol,
+                content != null ? content : "" //$NON-NLS-1$
         );
     }
 
@@ -233,14 +262,16 @@ public class RagContextBuilder {
     public static class RagContext {
         private final String context;
         private final List<CodeChunk> includedChunks;
+        private final List<RenderedChunk> renderedChunks;
         private final int totalTokens;
         private final int totalResults;
         private final int includedResults;
 
-        public RagContext(String context, List<CodeChunk> includedChunks,
+        public RagContext(String context, List<CodeChunk> includedChunks, List<RenderedChunk> renderedChunks,
                           int totalTokens, int totalResults, int includedResults) {
             this.context = context;
             this.includedChunks = includedChunks;
+            this.renderedChunks = renderedChunks;
             this.totalTokens = totalTokens;
             this.totalResults = totalResults;
             this.includedResults = includedResults;
@@ -252,6 +283,14 @@ public class RagContextBuilder {
 
         public List<CodeChunk> getIncludedChunks() {
             return includedChunks;
+        }
+
+        /**
+         * Returns the chunks that were actually included in the context, with the exact code content
+         * that fit the token budget (may be truncated).
+         */
+        public List<RenderedChunk> getRenderedChunks() {
+            return renderedChunks;
         }
 
         public int getTotalTokens() {
@@ -267,13 +306,46 @@ public class RagContextBuilder {
         }
 
         public boolean hasContext() {
-            return context != null && !context.isEmpty() && !includedChunks.isEmpty();
+            return context != null && !context.isEmpty() && renderedChunks != null && !renderedChunks.isEmpty();
         }
 
         @Override
         public String toString() {
             return String.format("RagContext[tokens=%d, included=%d/%d chunks]",
                     totalTokens, includedResults, totalResults);
+        }
+    }
+
+    /**
+     * A chunk selected for inclusion, with the exact content used in the prompt.
+     */
+    public static class RenderedChunk {
+        private final CodeChunk chunk;
+        private final String content;
+        private final boolean truncated;
+        private final int tokens;
+
+        public RenderedChunk(CodeChunk chunk, String content, boolean truncated, int tokens) {
+            this.chunk = chunk;
+            this.content = content;
+            this.truncated = truncated;
+            this.tokens = tokens;
+        }
+
+        public CodeChunk getChunk() {
+            return chunk;
+        }
+
+        public String getContent() {
+            return content;
+        }
+
+        public boolean isTruncated() {
+            return truncated;
+        }
+
+        public int getTokens() {
+            return tokens;
         }
     }
 }

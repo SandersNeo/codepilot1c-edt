@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
   Copyright (c) 2024 Example
-  This program and the accompanying materials are made available under
-  the terms of the Eclipse Public License 2.0 which is available at
-  https://www.eclipse.org/legal/epl-2.0/
-  SPDX-License-Identifier: EPL-2.0
+  This program is free software: you can redistribute it and/or modify
+  it under the terms of the GNU Affero General Public License as published by
+  the Free Software Foundation, version 3.
+  SPDX-License-Identifier: AGPL-3.0-only
 -->
 <project xmlns="http://maven.apache.org/POM/4.0.0"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
@@ -26,8 +26,8 @@
 
     <licenses>
         <license>
-            <name>Eclipse Public License - v 2.0</name>
-            <url>https://www.eclipse.org/legal/epl-2.0/</url>
+            <name>GNU Affero General Public License v3.0</name>
+            <url>https://www.gnu.org/licenses/agpl-3.0.html</url>
         </license>
     </licenses>
 

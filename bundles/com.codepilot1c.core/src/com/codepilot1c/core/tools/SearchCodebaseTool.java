@@ -1,7 +1,9 @@
 /*
  * Copyright (c) 2024 Example
- * This program and the accompanying materials are made available under
- * the terms of the Eclipse Public License 2.0
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, version 3.
+ * SPDX-License-Identifier: AGPL-3.0-only
  */
 package com.codepilot1c.core.tools;
 
@@ -75,15 +77,16 @@ public class SearchCodebaseTool implements ITool {
             }
 
             StringBuilder sb = new StringBuilder();
-            sb.append("Found ").append(context.getIncludedChunks().size()).append(" relevant code snippets:\n\n"); //$NON-NLS-1$ //$NON-NLS-2$
+            sb.append("Found ").append(context.getRenderedChunks().size()).append(" relevant code snippets:\n\n"); //$NON-NLS-1$ //$NON-NLS-2$
 
-            for (var chunk : context.getIncludedChunks()) {
+            for (var rendered : context.getRenderedChunks()) {
+                var chunk = rendered.getChunk();
                 sb.append("**File:** `").append(chunk.getFilePath()).append("`\n"); //$NON-NLS-1$ //$NON-NLS-2$
                 sb.append("**Lines:** ").append(chunk.getStartLine()).append("-").append(chunk.getEndLine()).append("\n"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
                 if (chunk.getSymbolName() != null && !chunk.getSymbolName().isEmpty()) {
                     sb.append("**Symbol:** ").append(chunk.getSymbolName()).append("\n"); //$NON-NLS-1$ //$NON-NLS-2$
                 }
-                sb.append("```bsl\n").append(chunk.getContent()).append("\n```\n\n"); //$NON-NLS-1$ //$NON-NLS-2$
+                sb.append("```bsl\n").append(rendered.getContent()).append("\n```\n\n"); //$NON-NLS-1$ //$NON-NLS-2$
             }
 
             return ToolResult.success(sb.toString(), ToolResult.ToolResultType.SEARCH_RESULTS);
