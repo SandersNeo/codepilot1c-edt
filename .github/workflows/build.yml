@@ -9,6 +9,12 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    env:
+      # Tycho downloads & parses large p2 metadata XML. Newer JDKs apply tight XML entity limits
+      # which may break builds. Disable/raise limits for CI builds.
+      JAVA_TOOL_OPTIONS: >-
+        -Djdk.xml.maxGeneralEntitySizeLimit=0
+        -Djdk.xml.totalEntitySizeLimit=0
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -29,3 +35,8 @@ jobs:
           name: p2-repository
           path: repositories/com.codepilot1c.update/target/repository/
 
+      - name: Upload update-site ZIP (offline install)
+        uses: actions/upload-artifact@v4
+        with:
+          name: update-site-zip
+          path: repositories/com.codepilot1c.update/target/*.zip

@@ -6,7 +6,7 @@ on:
       - "v*"
 
 permissions:
-  contents: read
+  contents: write
   pages: write
   id-token: write
 
@@ -20,6 +20,12 @@ jobs:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
+    env:
+      # Tycho downloads & parses large p2 metadata XML. Newer JDKs apply tight XML entity limits
+      # which may break builds. Disable/raise limits for CI builds.
+      JAVA_TOOL_OPTIONS: >-
+        -Djdk.xml.maxGeneralEntitySizeLimit=0
+        -Djdk.xml.totalEntitySizeLimit=0
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -33,6 +39,11 @@ jobs:
 
       - name: Build (Tycho)
         run: mvn -B -V --no-transfer-progress clean verify
+
+      - name: Attach update-site ZIP to GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: repositories/com.codepilot1c.update/target/*.zip
 
       - name: Add landing page
         run: |
