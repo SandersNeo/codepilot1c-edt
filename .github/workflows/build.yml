@@ -8,7 +8,13 @@ on:
 
 permissions:
   contents: write
+  pages: write
+  id-token: write
   packages: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: true
 
 jobs:
   build:
@@ -103,3 +109,26 @@ jobs:
           name: Nightly
           prerelease: true
           files: repositories/com.codepilot1c.update/target/*.zip
+
+      # Publish the p2 update site to GitHub Pages on every push to main.
+      # This enables in-place updates in EDT (Help -> Check for Updates) without uninstalling.
+      - name: Add landing page
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: |
+          mkdir -p repositories/com.codepilot1c.update/target/repository/site
+          cp site/index.html repositories/com.codepilot1c.update/target/repository/site/index.html
+          cp site/root-index.html repositories/com.codepilot1c.update/target/repository/index.html
+
+      - name: Configure Pages
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: actions/configure-pages@v5
+
+      - name: Upload Pages artifact (p2)
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: repositories/com.codepilot1c.update/target/repository/
+
+      - name: Deploy to GitHub Pages
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: actions/deploy-pages@v4
