@@ -268,14 +268,20 @@ public class DynamicLlmProvider implements ILlmProvider {
             return null;
         }
 
-        if (line.startsWith("data: ")) { //$NON-NLS-1$
-            String data = line.substring(6).trim();
+        // SSE lines can be "data: {...}" or "data:{...}" (with or without a space).
+        if (line.startsWith("data:")) { //$NON-NLS-1$
+            String data = line.substring(5).trim();
             if ("[DONE]".equals(data)) { //$NON-NLS-1$
                 return null;
             }
 
             try {
-                JsonObject json = JsonParser.parseString(data).getAsJsonObject();
+                // Some providers send heartbeat chunks like "null". Ignore non-object payloads.
+                JsonElement parsed = JsonParser.parseString(data);
+                if (parsed == null || parsed.isJsonNull() || !parsed.isJsonObject()) {
+                    return null;
+                }
+                JsonObject json = parsed.getAsJsonObject();
 
                 // Extract and send text content
                 String chunk = extractChunkContent(json);
@@ -307,12 +313,23 @@ public class DynamicLlmProvider implements ILlmProvider {
         }
 
         JsonObject choice = choices.get(0).getAsJsonObject();
+        // OpenAI streaming format: choices[0].delta.tool_calls
+        // Some OpenAI-compatible providers may put tool_calls under choices[0].message.tool_calls.
+        JsonArray toolCallsArray = null;
         JsonObject delta = choice.getAsJsonObject("delta"); //$NON-NLS-1$
-        if (delta == null || !delta.has("tool_calls")) { //$NON-NLS-1$
+        if (delta != null && delta.has("tool_calls")) { //$NON-NLS-1$
+            toolCallsArray = delta.getAsJsonArray("tool_calls"); //$NON-NLS-1$
+        } else {
+            JsonObject message = choice.getAsJsonObject("message"); //$NON-NLS-1$
+            if (message != null && message.has("tool_calls")) { //$NON-NLS-1$
+                toolCallsArray = message.getAsJsonArray("tool_calls"); //$NON-NLS-1$
+            }
+        }
+
+        if (toolCallsArray == null) {
             return;
         }
 
-        JsonArray toolCallsArray = delta.getAsJsonArray("tool_calls"); //$NON-NLS-1$
         for (JsonElement element : toolCallsArray) {
             JsonObject tcObj = element.getAsJsonObject();
 
