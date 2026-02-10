@@ -60,7 +60,10 @@ public class DynamicLlmProvider implements ILlmProvider {
     public DynamicLlmProvider(LlmProviderConfig config) {
         this.config = config;
         this.httpClient = HttpClient.newBuilder()
-                .version(HttpClient.Version.HTTP_2)
+                // vLLM/uvicorn deployments are commonly exposed over plain HTTP and can fail
+                // with Java HttpClient HTTP/2 (h2c) by not parsing the request body.
+                // HTTP/1.1 is the most compatible default for OpenAI-compatible endpoints.
+                .version(HttpClient.Version.HTTP_1_1)
                 .connectTimeout(Duration.ofSeconds(30))
                 .build();
         this.gson = new Gson();

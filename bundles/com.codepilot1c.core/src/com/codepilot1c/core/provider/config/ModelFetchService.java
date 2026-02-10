@@ -35,7 +35,9 @@ public class ModelFetchService {
 
     private ModelFetchService() {
         this.httpClient = HttpClient.newBuilder()
-                .version(HttpClient.Version.HTTP_2)
+                // Keep this compatible with plain-HTTP OpenAI-compatible deployments (vLLM/uvicorn),
+                // where Java HttpClient HTTP/2 (h2c) can lead to "missing body" validation errors.
+                .version(HttpClient.Version.HTTP_1_1)
                 .connectTimeout(Duration.ofSeconds(10))
                 .build();
     }
