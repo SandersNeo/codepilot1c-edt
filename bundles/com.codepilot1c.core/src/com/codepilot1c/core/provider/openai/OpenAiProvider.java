@@ -475,6 +475,19 @@ public class OpenAiProvider extends AbstractLlmProvider {
                 if (!toolCalls.isEmpty() && !"tool_calls".equals(finishReason)) { //$NON-NLS-1$
                     finishReason = LlmResponse.FINISH_REASON_TOOL_USE;
                 }
+            } else {
+                // Some OpenAI-compatible providers return an empty "content" while putting the
+                // visible answer into a non-standard "reasoning_content" field.
+                // Use it as a fallback only for the final answer (no tool calls).
+                if ((content == null || content.isEmpty())
+                        && message.has("reasoning_content") //$NON-NLS-1$
+                        && !message.get("reasoning_content").isJsonNull()) { //$NON-NLS-1$
+                    String rc = message.get("reasoning_content").getAsString(); //$NON-NLS-1$
+                    if (rc != null && !rc.isEmpty()) {
+                        LOG.debug("Using reasoning_content as content fallback (provider returned empty content)"); //$NON-NLS-1$
+                        content = rc;
+                    }
+                }
             }
 
             LOG.debug("Response parsed: finishReason=%s, hasContent=%b, toolCalls=%d", //$NON-NLS-1$

@@ -671,6 +671,21 @@ public class DynamicLlmProvider implements ILlmProvider {
             }
         } else {
             LOG.debug("tool_calls NOT found in message"); //$NON-NLS-1$
+
+            // Some OpenAI-compatible providers return an empty "content" while putting the
+            // visible answer into a non-standard "reasoning_content" field. This leads to
+            // the UI showing an empty final message after tool execution.
+            //
+            // We only use this fallback when there are no tool calls (i.e., final answer).
+            if ((content == null || content.isEmpty())
+                    && message.has("reasoning_content") //$NON-NLS-1$
+                    && !message.get("reasoning_content").isJsonNull()) { //$NON-NLS-1$
+                String rc = message.get("reasoning_content").getAsString(); //$NON-NLS-1$
+                if (rc != null && !rc.isEmpty()) {
+                    LOG.debug("Using reasoning_content as content fallback (provider returned empty content)"); //$NON-NLS-1$
+                    content = rc;
+                }
+            }
         }
 
         LOG.debug("Response parsed: finishReason=%s, hasContent=%b, toolCalls=%d", //$NON-NLS-1$
