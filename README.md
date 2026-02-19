@@ -7,6 +7,8 @@
 - Последний релиз: `v0.1.7` — <https://github.com/ondysss/codepilot1c-edt/releases/tag/v0.1.7>
 - Update site (GitHub Pages): <https://ondysss.github.io/codepilot1c-edt/>
 - GitHub Packages (Maven, ZIP): <https://github.com/ondysss/codepilot1c-edt/packages/2846572>
+- Telegram-канал: <https://t.me/codepilot1c>
+- Группа поддержки: <https://t.me/ai_1c_dev>
 
 ## Установка
 
