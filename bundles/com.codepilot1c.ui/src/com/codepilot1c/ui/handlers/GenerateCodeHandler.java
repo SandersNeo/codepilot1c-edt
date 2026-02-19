@@ -7,6 +7,9 @@
  */
 package com.codepilot1c.ui.handlers;
 
+import java.util.HashMap;
+import java.util.Map;
+
 import org.eclipse.core.commands.AbstractHandler;
 import org.eclipse.core.commands.ExecutionEvent;
 import org.eclipse.core.commands.ExecutionException;
@@ -17,6 +20,9 @@ import org.eclipse.ui.IWorkbenchWindow;
 import org.eclipse.ui.PartInitException;
 import org.eclipse.ui.handlers.HandlerUtil;
 
+import com.codepilot1c.core.settings.PromptCatalog;
+import com.codepilot1c.core.settings.PromptTemplateService;
+import com.codepilot1c.core.settings.VibePreferenceConstants;
 import com.codepilot1c.ui.views.ChatView;
 
 /**
@@ -68,15 +74,13 @@ public class GenerateCodeHandler extends AbstractHandler {
     }
 
     private String buildGeneratePrompt(String description) {
-        return String.format("""
-            Сгенерируй код на языке 1С для следующей задачи:
-
-            %s
-
-            Требования:
-            - Используй русский синтаксис языка 1С
-            - Добавь комментарии к коду
-            - Следуй стандартам разработки 1С
-            """, description); //$NON-NLS-1$
+        Map<String, String> variables = new HashMap<>();
+        variables.put("description", description); //$NON-NLS-1$
+        String preferenceKey = VibePreferenceConstants.PREF_PROMPT_TEMPLATE_GENERATE_CODE;
+        return PromptTemplateService.getInstance().applyTemplate(
+                preferenceKey,
+                PromptCatalog.getDefaultTemplate(preferenceKey),
+                variables,
+                PromptCatalog.getRequiredPlaceholders(preferenceKey));
     }
 }

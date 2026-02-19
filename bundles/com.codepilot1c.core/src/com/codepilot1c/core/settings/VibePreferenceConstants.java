@@ -73,6 +73,28 @@ public final class VibePreferenceConstants {
     public static final String PREF_INDEXING_ON_STARTUP = "indexing.onStartup"; //$NON-NLS-1$
     public static final String PREF_INDEXING_MAX_FILE_SIZE = "indexing.maxFileSize"; //$NON-NLS-1$
 
+    // Prompt customization
+    /** Optional custom text prepended to every system prompt. */
+    public static final String PREF_PROMPT_SYSTEM_PREFIX = "prompt.systemPrefix"; //$NON-NLS-1$
+    /** Optional custom text appended to every system prompt. */
+    public static final String PREF_PROMPT_SYSTEM_SUFFIX = "prompt.systemSuffix"; //$NON-NLS-1$
+    /** Custom template for explain-code command. */
+    public static final String PREF_PROMPT_TEMPLATE_EXPLAIN_CODE = "prompt.template.explainCode"; //$NON-NLS-1$
+    /** Custom template for generate-code command. */
+    public static final String PREF_PROMPT_TEMPLATE_GENERATE_CODE = "prompt.template.generateCode"; //$NON-NLS-1$
+    /** Custom template for fix-code command. */
+    public static final String PREF_PROMPT_TEMPLATE_FIX_CODE = "prompt.template.fixCode"; //$NON-NLS-1$
+    /** Custom template for critique-code command. */
+    public static final String PREF_PROMPT_TEMPLATE_CRITICISE_CODE = "prompt.template.criticiseCode"; //$NON-NLS-1$
+    /** Custom template for add-code command. */
+    public static final String PREF_PROMPT_TEMPLATE_ADD_CODE = "prompt.template.addCode"; //$NON-NLS-1$
+    /** Custom template for doc-comments command. */
+    public static final String PREF_PROMPT_TEMPLATE_DOC_COMMENTS = "prompt.template.docComments"; //$NON-NLS-1$
+    /** Custom template for query optimization command. */
+    public static final String PREF_PROMPT_TEMPLATE_OPTIMIZE_QUERY = "prompt.template.optimizeQuery"; //$NON-NLS-1$
+    /** Custom template for find-similar command. */
+    public static final String PREF_PROMPT_TEMPLATE_FIND_SIMILAR = "prompt.template.findSimilar"; //$NON-NLS-1$
+
     // HTTP preferences
     /** Enable HTTP/2 protocol (with automatic fallback to HTTP/1.1). */
     public static final String PREF_HTTP_HTTP2_ENABLED = "http.http2Enabled"; //$NON-NLS-1$

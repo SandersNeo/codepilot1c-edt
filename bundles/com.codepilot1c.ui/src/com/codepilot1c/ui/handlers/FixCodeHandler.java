@@ -7,6 +7,9 @@
  */
 package com.codepilot1c.ui.handlers;
 
+import java.util.HashMap;
+import java.util.Map;
+
 import org.eclipse.core.commands.AbstractHandler;
 import org.eclipse.core.commands.ExecutionEvent;
 import org.eclipse.core.commands.ExecutionException;
@@ -23,6 +26,9 @@ import org.eclipse.ui.handlers.HandlerUtil;
 import org.eclipse.ui.texteditor.ITextEditor;
 
 import com.codepilot1c.core.logging.VibeLogger;
+import com.codepilot1c.core.settings.PromptCatalog;
+import com.codepilot1c.core.settings.PromptTemplateService;
+import com.codepilot1c.core.settings.VibePreferenceConstants;
 import com.codepilot1c.ui.views.ChatView;
 
 /**
@@ -36,9 +42,6 @@ import com.codepilot1c.ui.views.ChatView;
 public class FixCodeHandler extends AbstractHandler {
 
     private static final VibeLogger.CategoryLogger LOG = VibeLogger.forClass(FixCodeHandler.class);
-
-    private static final String FIX_PROMPT_TEMPLATE =
-            "Fix the following code. Identify any bugs, errors, or issues and provide the corrected version:\n\n```\n%s\n```"; //$NON-NLS-1$
 
     @Override
     public Object execute(ExecutionEvent event) throws ExecutionException {
@@ -74,7 +77,14 @@ public class FixCodeHandler extends AbstractHandler {
         }
 
         // Format the prompt
-        String prompt = String.format(FIX_PROMPT_TEMPLATE, selectedCode);
+        Map<String, String> variables = new HashMap<>();
+        variables.put("code", selectedCode); //$NON-NLS-1$
+        String preferenceKey = VibePreferenceConstants.PREF_PROMPT_TEMPLATE_FIX_CODE;
+        String prompt = PromptTemplateService.getInstance().applyTemplate(
+                preferenceKey,
+                PromptCatalog.getDefaultTemplate(preferenceKey),
+                variables,
+                PromptCatalog.getRequiredPlaceholders(preferenceKey));
 
         // Open chat view and send the prompt
         try {

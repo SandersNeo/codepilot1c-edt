@@ -7,9 +7,13 @@
  */
 package com.codepilot1c.ui.handlers;
 
+import java.util.HashMap;
+import java.util.Map;
+
 import org.eclipse.core.commands.AbstractHandler;
 import org.eclipse.core.commands.ExecutionEvent;
 import org.eclipse.core.commands.ExecutionException;
+import org.eclipse.core.runtime.IAdaptable;
 import org.eclipse.jface.dialogs.InputDialog;
 import org.eclipse.jface.text.BadLocationException;
 import org.eclipse.jface.text.IDocument;
@@ -26,6 +30,9 @@ import org.eclipse.ui.handlers.HandlerUtil;
 import org.eclipse.ui.texteditor.ITextEditor;
 
 import com.codepilot1c.core.logging.VibeLogger;
+import com.codepilot1c.core.settings.PromptCatalog;
+import com.codepilot1c.core.settings.PromptTemplateService;
+import com.codepilot1c.core.settings.VibePreferenceConstants;
 import com.codepilot1c.ui.views.ChatView;
 
 /**
@@ -39,12 +46,6 @@ import com.codepilot1c.ui.views.ChatView;
 public class AddCodeHandler extends AbstractHandler {
 
     private static final VibeLogger.CategoryLogger LOG = VibeLogger.forClass(AddCodeHandler.class);
-
-    private static final String ADD_CODE_PROMPT_TEMPLATE =
-            "Generate code for the following request. The code will be inserted at the current cursor position.\n\n" //$NON-NLS-1$
-            + "Context (surrounding code):\n```\n%s\n```\n\n" //$NON-NLS-1$
-            + "Request: %s\n\n" //$NON-NLS-1$
-            + "Generate only the code to insert, without explanation."; //$NON-NLS-1$
 
     @Override
     public Object execute(ExecutionEvent event) throws ExecutionException {
@@ -97,8 +98,17 @@ public class AddCodeHandler extends AbstractHandler {
         ITextSelection textSelection = (ITextSelection) selection;
         LOG.debug("execute: offset=%d, length=%d", textSelection.getOffset(), textSelection.getLength()); //$NON-NLS-1$
 
-        // Get surrounding context - используем пустой контекст если не можем получить
-        String context = "";
+        // Get surrounding context if text editor is available
+        String context = ""; //$NON-NLS-1$
+        ITextEditor textEditor = null;
+        if (editor instanceof ITextEditor) {
+            textEditor = (ITextEditor) editor;
+        } else if (editor instanceof IAdaptable) {
+            textEditor = ((IAdaptable) editor).getAdapter(ITextEditor.class);
+        }
+        if (textEditor != null) {
+            context = getSurroundingContext(textEditor, textSelection.getOffset());
+        }
         LOG.debug("execute: контекст длиной %d символов", context.length()); //$NON-NLS-1$
 
         // Ask user what to add
@@ -124,7 +134,15 @@ public class AddCodeHandler extends AbstractHandler {
         }
 
         // Format the prompt
-        String prompt = String.format(ADD_CODE_PROMPT_TEMPLATE, context, description);
+        Map<String, String> variables = new HashMap<>();
+        variables.put("context", context); //$NON-NLS-1$
+        variables.put("request", description); //$NON-NLS-1$
+        String preferenceKey = VibePreferenceConstants.PREF_PROMPT_TEMPLATE_ADD_CODE;
+        String prompt = PromptTemplateService.getInstance().applyTemplate(
+                preferenceKey,
+                PromptCatalog.getDefaultTemplate(preferenceKey),
+                variables,
+                PromptCatalog.getRequiredPlaceholders(preferenceKey));
 
         // Open chat view and send the prompt
         try {

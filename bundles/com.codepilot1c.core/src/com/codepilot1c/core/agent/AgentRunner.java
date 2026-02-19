@@ -44,6 +44,7 @@ import com.codepilot1c.core.model.LlmStreamChunk;
 import com.codepilot1c.core.model.ToolCall;
 import com.codepilot1c.core.model.ToolDefinition;
 import com.codepilot1c.core.provider.ILlmProvider;
+import com.codepilot1c.core.settings.PromptTemplateService;
 import com.codepilot1c.core.tools.ITool;
 import com.codepilot1c.core.tools.ToolLogger;
 import com.codepilot1c.core.tools.ToolRegistry;
@@ -566,7 +567,7 @@ public class AgentRunner implements IAgentRunner {
             if (sb.length() > 0) sb.append("\n\n");
             sb.append(config.getSystemPromptAddition());
         }
-        return sb.toString();
+        return PromptTemplateService.getInstance().applySystemPrompt(sb.toString());
     }
 
     /**

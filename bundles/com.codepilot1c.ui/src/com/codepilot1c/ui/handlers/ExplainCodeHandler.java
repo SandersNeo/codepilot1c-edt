@@ -7,6 +7,9 @@
  */
 package com.codepilot1c.ui.handlers;
 
+import java.util.HashMap;
+import java.util.Map;
+
 import org.eclipse.core.commands.AbstractHandler;
 import org.eclipse.core.commands.ExecutionEvent;
 import org.eclipse.core.commands.ExecutionException;
@@ -30,6 +33,9 @@ import org.eclipse.ui.handlers.HandlerUtil;
 import org.eclipse.ui.texteditor.ITextEditor;
 
 import com.codepilot1c.core.logging.VibeLogger;
+import com.codepilot1c.core.settings.PromptCatalog;
+import com.codepilot1c.core.settings.PromptTemplateService;
+import com.codepilot1c.core.settings.VibePreferenceConstants;
 import com.codepilot1c.ui.views.ChatView;
 
 /**
@@ -514,7 +520,21 @@ public class ExplainCodeHandler extends AbstractHandler {
         sb.append("2. Как он работает\n"); //$NON-NLS-1$
         sb.append("3. Возможные улучшения (если есть)\n"); //$NON-NLS-1$
 
-        return sb.toString();
+        String builtPrompt = sb.toString();
+
+        Map<String, String> variables = new HashMap<>();
+        variables.put("prompt", builtPrompt); //$NON-NLS-1$
+        variables.put("code", context.selectedText != null ? context.selectedText : ""); //$NON-NLS-1$ //$NON-NLS-2$
+        variables.put("file", context.fileName != null ? context.fileName : ""); //$NON-NLS-1$ //$NON-NLS-2$
+        variables.put("module", context.moduleType != null ? context.moduleType : ""); //$NON-NLS-1$ //$NON-NLS-2$
+        variables.put("surrounding_code", context.surroundingCode != null ? context.surroundingCode : ""); //$NON-NLS-1$ //$NON-NLS-2$
+
+        String preferenceKey = VibePreferenceConstants.PREF_PROMPT_TEMPLATE_EXPLAIN_CODE;
+        return PromptTemplateService.getInstance().applyTemplate(
+                preferenceKey,
+                PromptCatalog.getDefaultTemplate(preferenceKey),
+                variables,
+                PromptCatalog.getRequiredPlaceholders(preferenceKey));
     }
 
     private String buildExplainPrompt(String code) {

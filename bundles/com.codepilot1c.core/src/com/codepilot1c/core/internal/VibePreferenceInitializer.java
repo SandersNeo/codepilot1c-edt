@@ -52,6 +52,18 @@ public class VibePreferenceInitializer extends AbstractPreferenceInitializer {
                 VibePreferenceConstants.DEFAULT_MAX_TOOL_ITERATIONS);
         defaults.putBoolean(VibePreferenceConstants.PREF_AGENT_SKIP_TOOL_CONFIRMATIONS, false);
 
+        // Prompt customization (empty values mean "use built-in templates")
+        defaults.put(VibePreferenceConstants.PREF_PROMPT_SYSTEM_PREFIX, ""); //$NON-NLS-1$
+        defaults.put(VibePreferenceConstants.PREF_PROMPT_SYSTEM_SUFFIX, ""); //$NON-NLS-1$
+        defaults.put(VibePreferenceConstants.PREF_PROMPT_TEMPLATE_EXPLAIN_CODE, ""); //$NON-NLS-1$
+        defaults.put(VibePreferenceConstants.PREF_PROMPT_TEMPLATE_GENERATE_CODE, ""); //$NON-NLS-1$
+        defaults.put(VibePreferenceConstants.PREF_PROMPT_TEMPLATE_FIX_CODE, ""); //$NON-NLS-1$
+        defaults.put(VibePreferenceConstants.PREF_PROMPT_TEMPLATE_CRITICISE_CODE, ""); //$NON-NLS-1$
+        defaults.put(VibePreferenceConstants.PREF_PROMPT_TEMPLATE_ADD_CODE, ""); //$NON-NLS-1$
+        defaults.put(VibePreferenceConstants.PREF_PROMPT_TEMPLATE_DOC_COMMENTS, ""); //$NON-NLS-1$
+        defaults.put(VibePreferenceConstants.PREF_PROMPT_TEMPLATE_OPTIMIZE_QUERY, ""); //$NON-NLS-1$
+        defaults.put(VibePreferenceConstants.PREF_PROMPT_TEMPLATE_FIND_SIMILAR, ""); //$NON-NLS-1$
+
         // Embedding defaults - use auto-detection for zero-config experience
         defaults.put(VibePreferenceConstants.PREF_EMBEDDING_PROVIDER_ID,
                 VibePreferenceConstants.PREF_EMBEDDING_PROVIDER_AUTO); // Auto-detect

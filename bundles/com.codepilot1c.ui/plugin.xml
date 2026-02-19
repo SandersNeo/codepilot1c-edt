@@ -9,6 +9,12 @@
             class="com.codepilot1c.ui.preferences.VibePreferencePage">
         </page>
         <page
+            id="com.codepilot1c.ui.preferences.PromptsPreferencePage"
+            name="%preferences.prompts.name"
+            category="com.codepilot1c.ui.preferences.VibePreferencePage"
+            class="com.codepilot1c.ui.preferences.PromptsPreferencePage">
+        </page>
+        <page
             id="com.codepilot1c.ui.preferences.ProvidersPreferencePage"
             name="%preferences.providers.name"
             category="com.codepilot1c.ui.preferences.VibePreferencePage"

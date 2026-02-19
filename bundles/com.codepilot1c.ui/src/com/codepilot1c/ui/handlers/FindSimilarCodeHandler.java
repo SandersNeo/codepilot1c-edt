@@ -7,6 +7,9 @@
  */
 package com.codepilot1c.ui.handlers;
 
+import java.util.HashMap;
+import java.util.Map;
+
 import org.eclipse.core.commands.AbstractHandler;
 import org.eclipse.core.commands.ExecutionEvent;
 import org.eclipse.core.commands.ExecutionException;
@@ -21,6 +24,9 @@ import org.eclipse.ui.handlers.HandlerUtil;
 import org.eclipse.ui.texteditor.ITextEditor;
 
 import com.codepilot1c.core.logging.VibeLogger;
+import com.codepilot1c.core.settings.PromptCatalog;
+import com.codepilot1c.core.settings.PromptTemplateService;
+import com.codepilot1c.core.settings.VibePreferenceConstants;
 import com.codepilot1c.ui.views.ChatView;
 
 /**
@@ -127,17 +133,13 @@ public class FindSimilarCodeHandler extends AbstractHandler {
     }
 
     private String buildFindSimilarPrompt(String code) {
-        return String.format("""
-            Найди похожий код в кодовой базе для следующего фрагмента:
-
-            ```bsl
-            %s
-            ```
-
-            Используй семантический поиск (RAG) чтобы найти:
-            1. Похожие паттерны кода
-            2. Примеры использования похожей логики
-            3. Возможные места для переиспользования
-            """, code); //$NON-NLS-1$
+        Map<String, String> variables = new HashMap<>();
+        variables.put("code", code); //$NON-NLS-1$
+        String preferenceKey = VibePreferenceConstants.PREF_PROMPT_TEMPLATE_FIND_SIMILAR;
+        return PromptTemplateService.getInstance().applyTemplate(
+                preferenceKey,
+                PromptCatalog.getDefaultTemplate(preferenceKey),
+                variables,
+                PromptCatalog.getRequiredPlaceholders(preferenceKey));
     }
 }

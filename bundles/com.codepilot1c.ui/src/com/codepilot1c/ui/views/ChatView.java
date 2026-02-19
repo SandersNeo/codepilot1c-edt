@@ -42,6 +42,7 @@ import com.codepilot1c.core.model.ToolDefinition;
 import com.codepilot1c.core.provider.ILlmProvider;
 import com.codepilot1c.core.provider.LlmProviderRegistry;
 import com.codepilot1c.core.rag.RagService;
+import com.codepilot1c.core.settings.PromptTemplateService;
 import com.codepilot1c.core.settings.VibePreferenceConstants;
 import com.codepilot1c.core.tools.ITool;
 import com.codepilot1c.core.tools.ToolRegistry;
@@ -1473,7 +1474,7 @@ public class ChatView extends ViewPart {
             это контекст из активного редактора. Учитывайте его при ответе.
             """); //$NON-NLS-1$
 
-        return prompt.toString();
+        return PromptTemplateService.getInstance().applySystemPrompt(prompt.toString());
     }
 
     private void appendToolsSection(StringBuilder prompt) {

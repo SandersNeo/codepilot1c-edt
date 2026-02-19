@@ -7,6 +7,9 @@
  */
 package com.codepilot1c.ui.handlers;
 
+import java.util.HashMap;
+import java.util.Map;
+
 import org.eclipse.core.commands.AbstractHandler;
 import org.eclipse.core.commands.ExecutionEvent;
 import org.eclipse.core.commands.ExecutionException;
@@ -21,6 +24,9 @@ import org.eclipse.ui.handlers.HandlerUtil;
 import org.eclipse.ui.texteditor.ITextEditor;
 
 import com.codepilot1c.core.logging.VibeLogger;
+import com.codepilot1c.core.settings.PromptCatalog;
+import com.codepilot1c.core.settings.PromptTemplateService;
+import com.codepilot1c.core.settings.VibePreferenceConstants;
 import com.codepilot1c.ui.views.ChatView;
 
 /**
@@ -133,30 +139,13 @@ public class OptimizeQueryHandler extends AbstractHandler {
     }
 
     private String buildOptimizeQueryPrompt(String queryText) {
-        return String.format("""
-            Оптимизируй следующий запрос 1С (SDBL):
-
-            ```sdbl
-            %s
-            ```
-
-            Проанализируй и предложи:
-            1. **Оптимизация производительности**:
-               - Использование индексов
-               - Оптимизация соединений (JOIN)
-               - Уменьшение объёма выборки
-
-            2. **Структурные улучшения**:
-               - Упрощение условий
-               - Удаление избыточных полей
-               - Оптимизация группировок
-
-            3. **Лучшие практики**:
-               - Использование временных таблиц
-               - Пакетная обработка
-               - Читаемость кода
-
-            Покажи оптимизированную версию запроса с комментариями.
-            """, queryText); //$NON-NLS-1$
+        Map<String, String> variables = new HashMap<>();
+        variables.put("query", queryText); //$NON-NLS-1$
+        String preferenceKey = VibePreferenceConstants.PREF_PROMPT_TEMPLATE_OPTIMIZE_QUERY;
+        return PromptTemplateService.getInstance().applyTemplate(
+                preferenceKey,
+                PromptCatalog.getDefaultTemplate(preferenceKey),
+                variables,
+                PromptCatalog.getRequiredPlaceholders(preferenceKey));
     }
 }
