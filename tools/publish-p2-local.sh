@@ -4,14 +4,15 @@ set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 P2_DIR="$ROOT_DIR/repositories/com.codepilot1c.update/target/repository"
 WORKTREE_DIR="${WORKTREE_DIR:-$(mktemp -d -t codepilot1c-gh-pages.XXXXXX)}"
+WORKTREE_DIR_REAL="$(cd "$WORKTREE_DIR" && pwd -P)"
 REMOTE_NAME="${REMOTE_NAME:-origin}"
 BRANCH_NAME="${BRANCH_NAME:-gh-pages}"
 
 cleanup() {
-  if git -C "$ROOT_DIR" worktree list | grep -q "$WORKTREE_DIR"; then
-    git -C "$ROOT_DIR" worktree remove --force "$WORKTREE_DIR" >/dev/null 2>&1 || true
+  if git -C "$ROOT_DIR" worktree list | grep -q "$WORKTREE_DIR_REAL"; then
+    git -C "$ROOT_DIR" worktree remove --force "$WORKTREE_DIR_REAL" >/dev/null 2>&1 || true
   fi
-  rm -rf "$WORKTREE_DIR" >/dev/null 2>&1 || true
+  rm -rf "$WORKTREE_DIR_REAL" >/dev/null 2>&1 || true
 }
 trap cleanup EXIT
 
@@ -35,23 +36,23 @@ echo "[3/5] Preparing $BRANCH_NAME worktree..."
 git -C "$ROOT_DIR" fetch "$REMOTE_NAME" "$BRANCH_NAME" >/dev/null 2>&1 || true
 
 if git -C "$ROOT_DIR" show-ref --verify --quiet "refs/remotes/$REMOTE_NAME/$BRANCH_NAME"; then
-  git -C "$ROOT_DIR" worktree add --force --detach "$WORKTREE_DIR" "$REMOTE_NAME/$BRANCH_NAME"
+  git -C "$ROOT_DIR" worktree add --force --detach "$WORKTREE_DIR_REAL" "$REMOTE_NAME/$BRANCH_NAME"
 else
-  git -C "$ROOT_DIR" worktree add --force --detach "$WORKTREE_DIR"
+  git -C "$ROOT_DIR" worktree add --force --detach "$WORKTREE_DIR_REAL"
   (
-    cd "$WORKTREE_DIR"
+    cd "$WORKTREE_DIR_REAL"
     git checkout --orphan "$BRANCH_NAME"
     git rm -rf . >/dev/null 2>&1 || true
   )
 fi
 
 echo "[4/5] Syncing p2 content into $BRANCH_NAME..."
-rsync -a --delete --exclude='.git' "$P2_DIR/" "$WORKTREE_DIR/"
+rsync -a --delete --exclude='.git' "$P2_DIR/" "$WORKTREE_DIR_REAL/"
 
 (
-  cd "$WORKTREE_DIR"
+  cd "$WORKTREE_DIR_REAL"
   WT_TOP="$(git rev-parse --show-toplevel)"
-  if [[ "$WT_TOP" != "$WORKTREE_DIR" ]]; then
+  if [[ "$WT_TOP" != "$WORKTREE_DIR_REAL" ]]; then
     echo "Refusing to publish: unexpected worktree root '$WT_TOP'" >&2
     exit 1
   fi
