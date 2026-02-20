@@ -36,6 +36,7 @@ public class Messages extends NLS {
     public static String ChatView_CompactContextButton;
     public static String ChatView_CompactContextTooltip;
     public static String ChatView_ContextCompactedNotice;
+    public static String ChatView_ContextCompactedSkippedNotice;
     public static String ChatView_AutoCompactLabel;
     public static String ChatView_ManualCompactLabel;
 

@@ -291,7 +291,11 @@ public class ChatView extends ViewPart {
         compactButton.setToolTipText(Messages.ChatView_CompactContextTooltip);
         compactButton.setFont(theme.getFont());
         compactButton.setLayoutData(new GridData(SWT.LEFT, SWT.CENTER, false, false));
-        compactButton.addListener(SWT.Selection, e -> compactConversationHistory(false));
+        compactButton.addListener(SWT.Selection, e -> {
+            if (!compactConversationHistory(false)) {
+                appendSystemMessage(Messages.ChatView_ContextCompactedSkippedNotice);
+            }
+        });
 
         tokenUsageLabel = new Label(buttonBar, SWT.NONE);
         tokenUsageLabel.setBackground(buttonBar.getBackground());
@@ -1864,11 +1868,13 @@ public class ChatView extends ViewPart {
         if (conversationHistory.size() < 2) {
             return false;
         }
-        if (conversationHistory.size() <= COMPACT_TAIL_MESSAGES + 2) {
+        int tailMessages = automatic ? COMPACT_TAIL_MESSAGES
+                : Math.min(COMPACT_TAIL_MESSAGES, Math.max(4, conversationHistory.size() / 2));
+        if (conversationHistory.size() <= tailMessages + 1) {
             return false;
         }
 
-        int keepFrom = Math.max(0, conversationHistory.size() - COMPACT_TAIL_MESSAGES);
+        int keepFrom = Math.max(0, conversationHistory.size() - tailMessages);
         List<LlmMessage> head = new ArrayList<>(conversationHistory.subList(0, keepFrom));
         List<LlmMessage> tail = new ArrayList<>(conversationHistory.subList(keepFrom, conversationHistory.size()));
         String summary = buildHistorySummary(head);

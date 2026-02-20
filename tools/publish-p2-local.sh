@@ -46,7 +46,7 @@ else
 fi
 
 echo "[4/5] Syncing p2 content into $BRANCH_NAME..."
-rsync -a --delete "$P2_DIR/" "$WORKTREE_DIR/"
+rsync -a --delete --exclude='.git' "$P2_DIR/" "$WORKTREE_DIR/"
 
 (
   cd "$WORKTREE_DIR"
