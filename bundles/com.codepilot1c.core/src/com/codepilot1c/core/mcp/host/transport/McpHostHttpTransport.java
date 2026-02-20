@@ -143,20 +143,16 @@ public class McpHostHttpTransport implements IMcpHostTransport {
                 }
                 exchange.getResponseHeaders().add("Mcp-Session-Id", responseSessionId); //$NON-NLS-1$
                 McpMessage response = router.route(request, session);
-                String json = gson.toJson(response);
-                String accept = exchange.getRequestHeaders().getFirst("Accept"); //$NON-NLS-1$
-                boolean wantsSse = accept != null && accept.contains("text/event-stream"); //$NON-NLS-1$
-                byte[] bytes;
-                if (wantsSse) {
-                    // Streamable HTTP uses standard SSE framing with real LF separators.
-                    String sse = "event: message\n" //$NON-NLS-1$
-                        + "data: " + json + "\n\n"; //$NON-NLS-1$ //$NON-NLS-2$
-                    exchange.getResponseHeaders().add("Content-Type", "text/event-stream"); //$NON-NLS-1$ //$NON-NLS-2$
-                    bytes = sse.getBytes(StandardCharsets.UTF_8);
-                } else {
-                    exchange.getResponseHeaders().add("Content-Type", "application/json"); //$NON-NLS-1$ //$NON-NLS-2$
-                    bytes = json.getBytes(StandardCharsets.UTF_8);
+                if (request != null && request.isNotification()) {
+                    // JSON-RPC notifications must not produce a response message body.
+                    exchange.sendResponseHeaders(202, -1);
+                    return;
                 }
+                String json = gson.toJson(response);
+                // For JSON-RPC request/response over POST return plain JSON.
+                // Some clients (including Codex MCP) reject SSE-framed initialize responses.
+                exchange.getResponseHeaders().add("Content-Type", "application/json"); //$NON-NLS-1$ //$NON-NLS-2$
+                byte[] bytes = json.getBytes(StandardCharsets.UTF_8);
                 exchange.sendResponseHeaders(200, bytes.length);
                 try (OutputStream os = exchange.getResponseBody()) {
                     os.write(bytes);

@@ -116,7 +116,8 @@ public class McpMessage {
      * @return the ID, or null if not set
      */
     public String getId() {
-        return id != null ? String.valueOf(id) : null;
+        Object normalizedId = normalizeRpcId(id);
+        return normalizedId != null ? String.valueOf(normalizedId) : null;
     }
 
     /**
@@ -134,7 +135,7 @@ public class McpMessage {
      * @param id the ID (String or Number)
      */
     public void setRawId(Object id) {
-        this.id = id;
+        this.id = normalizeRpcId(id);
     }
 
     /**
@@ -143,7 +144,35 @@ public class McpMessage {
      * @return the raw ID object
      */
     public Object getRawId() {
-        return id;
+        return normalizeRpcId(id);
+    }
+
+    /**
+     * Normalizes JSON-RPC id values parsed through generic Object mapping.
+     *
+     * <p>Gson maps numeric Object fields to Double by default.
+     * For JSON-RPC compatibility we preserve integral ids as Long so
+     * request id {@code 0} is returned as {@code 0}, not {@code 0.0}.</p>
+     *
+     * @param rawId raw id value
+     * @return normalized id
+     */
+    private static Object normalizeRpcId(Object rawId) {
+        if (rawId instanceof Double d) {
+            if (Double.isFinite(d) && d == Math.rint(d)
+                    && d >= Long.MIN_VALUE && d <= Long.MAX_VALUE) {
+                return Long.valueOf(d.longValue());
+            }
+            return d;
+        }
+        if (rawId instanceof Float f) {
+            if (Float.isFinite(f) && f == Math.rint(f)
+                    && f >= Long.MIN_VALUE && f <= Long.MAX_VALUE) {
+                return Long.valueOf(f.longValue());
+            }
+            return f;
+        }
+        return rawId;
     }
 
     public Object getResult() {
