@@ -431,7 +431,11 @@ public class ClaudeProvider extends AbstractLlmProvider {
                 JsonObject usageJson = json.getAsJsonObject("usage"); //$NON-NLS-1$
                 int inputTokens = usageJson.get("input_tokens").getAsInt(); //$NON-NLS-1$
                 int outputTokens = usageJson.get("output_tokens").getAsInt(); //$NON-NLS-1$
-                usage = new LlmResponse.Usage(inputTokens, outputTokens, inputTokens + outputTokens);
+                int cachedInputTokens = 0;
+                if (usageJson.has("cache_read_input_tokens") && !usageJson.get("cache_read_input_tokens").isJsonNull()) { //$NON-NLS-1$ //$NON-NLS-2$
+                    cachedInputTokens = usageJson.get("cache_read_input_tokens").getAsInt(); //$NON-NLS-1$
+                }
+                usage = new LlmResponse.Usage(inputTokens, cachedInputTokens, outputTokens, inputTokens + outputTokens);
             }
 
             return new LlmResponse(content.toString(), model, usage, stopReason,

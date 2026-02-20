@@ -66,5 +66,22 @@ public class VibePreferencePage extends FieldEditorPreferencePage implements IWo
                 VibePreferenceConstants.PREF_AGENT_SKIP_TOOL_CONFIRMATIONS,
                 Messages.PreferencePage_SkipToolConfirmationsLabel,
                 getFieldEditorParent()));
+
+        addField(new BooleanFieldEditor(
+                VibePreferenceConstants.PREF_CHAT_AUTO_COMPACT_ENABLED,
+                Messages.PreferencePage_AutoCompactEnabledLabel,
+                getFieldEditorParent()));
+
+        IntegerFieldEditor autoCompactThresholdEditor = new IntegerFieldEditor(
+                VibePreferenceConstants.PREF_CHAT_AUTO_COMPACT_THRESHOLD_PERCENT,
+                Messages.PreferencePage_AutoCompactThresholdLabel,
+                getFieldEditorParent());
+        autoCompactThresholdEditor.setValidRange(50, 95);
+        addField(autoCompactThresholdEditor);
+
+        addField(new BooleanFieldEditor(
+                VibePreferenceConstants.PREF_CHAT_SHOW_TOKEN_USAGE,
+                Messages.PreferencePage_ShowTokenUsageLabel,
+                getFieldEditorParent()));
     }
 }

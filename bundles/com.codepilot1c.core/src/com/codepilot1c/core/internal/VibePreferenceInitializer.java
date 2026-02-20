@@ -51,6 +51,9 @@ public class VibePreferenceInitializer extends AbstractPreferenceInitializer {
         defaults.putInt(VibePreferenceConstants.PREF_MAX_TOOL_ITERATIONS,
                 VibePreferenceConstants.DEFAULT_MAX_TOOL_ITERATIONS);
         defaults.putBoolean(VibePreferenceConstants.PREF_AGENT_SKIP_TOOL_CONFIRMATIONS, false);
+        defaults.putBoolean(VibePreferenceConstants.PREF_CHAT_AUTO_COMPACT_ENABLED, true);
+        defaults.putInt(VibePreferenceConstants.PREF_CHAT_AUTO_COMPACT_THRESHOLD_PERCENT, 85);
+        defaults.putBoolean(VibePreferenceConstants.PREF_CHAT_SHOW_TOKEN_USAGE, true);
 
         // Prompt customization (empty values mean "use built-in templates")
         defaults.put(VibePreferenceConstants.PREF_PROMPT_SYSTEM_PREFIX, ""); //$NON-NLS-1$

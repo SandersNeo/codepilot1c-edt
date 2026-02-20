@@ -457,7 +457,14 @@ public class OpenAiProvider extends AbstractLlmProvider {
                 int promptTokens = usageJson.get("prompt_tokens").getAsInt(); //$NON-NLS-1$
                 int completionTokens = usageJson.get("completion_tokens").getAsInt(); //$NON-NLS-1$
                 int totalTokens = usageJson.get("total_tokens").getAsInt(); //$NON-NLS-1$
-                usage = new LlmResponse.Usage(promptTokens, completionTokens, totalTokens);
+                int cachedPromptTokens = 0;
+                if (usageJson.has("prompt_tokens_details") && usageJson.get("prompt_tokens_details").isJsonObject()) { //$NON-NLS-1$ //$NON-NLS-2$
+                    JsonObject details = usageJson.getAsJsonObject("prompt_tokens_details"); //$NON-NLS-1$
+                    if (details.has("cached_tokens") && !details.get("cached_tokens").isJsonNull()) { //$NON-NLS-1$ //$NON-NLS-2$
+                        cachedPromptTokens = details.get("cached_tokens").getAsInt(); //$NON-NLS-1$
+                    }
+                }
+                usage = new LlmResponse.Usage(promptTokens, cachedPromptTokens, completionTokens, totalTokens);
             }
 
             // Parse tool calls if present

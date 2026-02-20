@@ -33,6 +33,11 @@ public class Messages extends NLS {
     public static String ChatView_WelcomeMessage;
     public static String ChatView_ErrorMessage;
     public static String ChatView_NotConfiguredMessage;
+    public static String ChatView_CompactContextButton;
+    public static String ChatView_CompactContextTooltip;
+    public static String ChatView_ContextCompactedNotice;
+    public static String ChatView_AutoCompactLabel;
+    public static String ChatView_ManualCompactLabel;
 
     public static String PreferencePage_Description;
     public static String PreferencePage_ProviderLabel;
@@ -44,6 +49,9 @@ public class Messages extends NLS {
     public static String PreferencePage_StreamingLabel;
     public static String PreferencePage_MaxIterationsLabel;
     public static String PreferencePage_SkipToolConfirmationsLabel;
+    public static String PreferencePage_AutoCompactEnabledLabel;
+    public static String PreferencePage_AutoCompactThresholdLabel;
+    public static String PreferencePage_ShowTokenUsageLabel;
     public static String PreferencePage_TestConnectionButton;
     public static String PreferencePage_TestSuccess;
     public static String PreferencePage_TestFailed;

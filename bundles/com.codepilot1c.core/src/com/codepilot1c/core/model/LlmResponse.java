@@ -214,17 +214,27 @@ public class LlmResponse {
      */
     public static class Usage {
         private final int promptTokens;
+        private final int cachedPromptTokens;
         private final int completionTokens;
         private final int totalTokens;
 
         public Usage(int promptTokens, int completionTokens, int totalTokens) {
+            this(promptTokens, 0, completionTokens, totalTokens);
+        }
+
+        public Usage(int promptTokens, int cachedPromptTokens, int completionTokens, int totalTokens) {
             this.promptTokens = promptTokens;
+            this.cachedPromptTokens = cachedPromptTokens;
             this.completionTokens = completionTokens;
             this.totalTokens = totalTokens;
         }
 
         public int getPromptTokens() {
             return promptTokens;
+        }
+
+        public int getCachedPromptTokens() {
+            return cachedPromptTokens;
         }
 
         public int getCompletionTokens() {

@@ -12,6 +12,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+import java.util.stream.Collectors;
 
 import org.eclipse.core.runtime.preferences.IEclipsePreferences;
 import org.eclipse.core.runtime.preferences.InstanceScope;
@@ -85,7 +86,9 @@ public class ChatView extends ViewPart {
     private Button clearButton;
     private Button stopButton;
     private Button applyCodeButton;
+    private Button compactButton;
     private TypingIndicatorWidget typingIndicator;
+    private Label tokenUsageLabel;
 
     private final List<LlmMessage> conversationHistory = new ArrayList<>();
     private final List<ChatMessageComposite> messageWidgets = new ArrayList<>();
@@ -106,6 +109,20 @@ public class ChatView extends ViewPart {
     private boolean previewModeEnabled = false;
     /** Current set of proposed changes awaiting review */
     private ProposedChangeSet currentProposedChanges;
+    /** Token usage totals for current chat session */
+    private long inputTokensTotal = 0;
+    private long cachedInputTokensTotal = 0;
+    private long outputTokensTotal = 0;
+    private long totalTokensTotal = 0;
+    private long lastAutoCompactAtMs = 0;
+    private LlmRequest currentStreamingRequest;
+
+    private static final int CHARS_PER_TOKEN_ESTIMATE = 4;
+    private static final int AUTO_COMPACT_MIN_MESSAGES = 20;
+    private static final int AUTO_COMPACT_HISTORY_TOKEN_BUDGET = 12000;
+    private static final long AUTO_COMPACT_COOLDOWN_MS = 30_000L;
+    private static final int COMPACT_TAIL_MESSAGES = 14;
+    private static final String COMPACT_SUMMARY_MARKER = "[COMPACT_SUMMARY]"; //$NON-NLS-1$
 
     @Override
     public void createPartControl(Composite parent) {
@@ -239,7 +256,7 @@ public class ChatView extends ViewPart {
         Composite buttonBar = new Composite(inputArea, SWT.NONE);
         buttonBar.setBackground(inputArea.getBackground());
         buttonBar.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
-        GridLayout buttonLayout = new GridLayout(5, false);
+        GridLayout buttonLayout = new GridLayout(7, false);
         buttonLayout.marginWidth = 0;
         buttonLayout.marginHeight = 0;
         buttonLayout.horizontalSpacing = 4; // Compact spacing
@@ -267,6 +284,21 @@ public class ChatView extends ViewPart {
         applyData.heightHint = 28;
         applyCodeButton.setLayoutData(applyData);
         applyCodeButton.addListener(SWT.Selection, e -> applyCodeToEditor());
+
+        // Manual context compaction button
+        compactButton = new Button(buttonBar, SWT.PUSH);
+        compactButton.setText(Messages.ChatView_CompactContextButton);
+        compactButton.setToolTipText(Messages.ChatView_CompactContextTooltip);
+        compactButton.setFont(theme.getFont());
+        compactButton.setLayoutData(new GridData(SWT.LEFT, SWT.CENTER, false, false));
+        compactButton.addListener(SWT.Selection, e -> compactConversationHistory(false));
+
+        tokenUsageLabel = new Label(buttonBar, SWT.NONE);
+        tokenUsageLabel.setBackground(buttonBar.getBackground());
+        tokenUsageLabel.setForeground(theme.getTextMuted());
+        tokenUsageLabel.setLayoutData(new GridData(SWT.LEFT, SWT.CENTER, false, false));
+        tokenUsageLabel.setText(""); //$NON-NLS-1$
+        updateTokenUsageDisplay();
 
         // Spacer to push stop and clear to the right
         Label spacer = new Label(buttonBar, SWT.NONE);
@@ -360,6 +392,8 @@ public class ChatView extends ViewPart {
         appendUserMessage(userInput);
         inputField.setText(""); //$NON-NLS-1$
 
+        maybeAutoCompactHistory();
+
         // No automatic context preparation: send the user message as-is.
         setProcessing(true, "Отправка запроса..."); //$NON-NLS-1$
         conversationHistory.add(LlmMessage.user(userInput));
@@ -405,6 +439,7 @@ public class ChatView extends ViewPart {
     private void startStreamingRequest(ILlmProvider provider, LlmRequest request, Display display) {
         LOG.debug("startStreamingRequest: using streaming mode"); //$NON-NLS-1$
 
+        currentStreamingRequest = request;
         streamingContent = new StringBuffer();
         streamingReasoning = new StringBuffer();
         isStreaming = true;
@@ -508,9 +543,11 @@ public class ChatView extends ViewPart {
                         // Create response object for tool handling
                         LlmResponse toolResponse = LlmResponse.builder()
                                 .content(accumulatedContent)
+                                .usage(estimateUsageForResponse(currentStreamingRequest, accumulatedContent, accumulatedReasoning))
                                 .toolCalls(toolCalls)
                                 .finishReason(LlmResponse.FINISH_REASON_TOOL_USE)
                                 .build();
+                        registerUsage(toolResponse);
 
                         // Update the displayed message with current content and reasoning
                         if (USE_BROWSER_RENDERING && browserChatPanel != null) {
@@ -562,6 +599,13 @@ public class ChatView extends ViewPart {
 
                         // Add to conversation history
                         if (!finalContent.isEmpty()) {
+                            LlmResponse usageResponse = LlmResponse.builder()
+                                    .content(finalContent)
+                                    .usage(estimateUsageForResponse(currentStreamingRequest, finalContent,
+                                            streamingReasoning != null ? streamingReasoning.toString() : null))
+                                    .finishReason(LlmResponse.FINISH_REASON_STOP)
+                                    .build();
+                            registerUsage(usageResponse);
                             conversationHistory.add(LlmMessage.assistant(finalContent));
                             lastAssistantResponse = finalContent;
 
@@ -588,6 +632,7 @@ public class ChatView extends ViewPart {
         // Send request
         currentRequest = provider.complete(request)
                 .thenCompose(response -> {
+                    registerUsage(response);
                     LOG.debug("startConversationLoop: response received, hasToolCalls=%b", response.hasToolCalls()); //$NON-NLS-1$
                     // Update stage
                     if (!display.isDisposed()) {
@@ -1015,6 +1060,7 @@ public class ChatView extends ViewPart {
                 : provider.complete(nextRequest);
 
         return nextResponseFuture.thenCompose(nextResponse -> {
+                    registerUsage(nextResponse);
                     LOG.debug("continueAfterToolCalls: got next response, hasToolCalls=%b", nextResponse.hasToolCalls()); //$NON-NLS-1$
                     // Update stage based on response
                     if (!display.isDisposed()) {
@@ -1592,6 +1638,7 @@ public class ChatView extends ViewPart {
 
         conversationHistory.clear();
         lastAssistantResponse = null;
+        resetTokenUsage();
         if (!isDisposed()) {
             applyCodeButton.setEnabled(false);
         }
@@ -1643,6 +1690,9 @@ public class ChatView extends ViewPart {
             sendButton.setEnabled(!processing);
             stopButton.setEnabled(processing);
             inputField.setEnabled(!processing);
+            if (compactButton != null && !compactButton.isDisposed()) {
+                compactButton.setEnabled(!processing);
+            }
 
             // Show/hide typing indicator
             if (USE_BROWSER_RENDERING) {
@@ -1792,6 +1842,209 @@ public class ChatView extends ViewPart {
      */
     public ProposedChangeSet getCurrentProposedChanges() {
         return currentProposedChanges;
+    }
+
+    private void maybeAutoCompactHistory() {
+        if (!isAutoCompactEnabled()) {
+            return;
+        }
+        long now = System.currentTimeMillis();
+        if (now - lastAutoCompactAtMs < AUTO_COMPACT_COOLDOWN_MS) {
+            return;
+        }
+        if (!isHistoryLarge()) {
+            return;
+        }
+        if (compactConversationHistory(true)) {
+            lastAutoCompactAtMs = now;
+        }
+    }
+
+    private boolean compactConversationHistory(boolean automatic) {
+        if (conversationHistory.size() < 2) {
+            return false;
+        }
+        if (conversationHistory.size() <= COMPACT_TAIL_MESSAGES + 2) {
+            return false;
+        }
+
+        int keepFrom = Math.max(0, conversationHistory.size() - COMPACT_TAIL_MESSAGES);
+        List<LlmMessage> head = new ArrayList<>(conversationHistory.subList(0, keepFrom));
+        List<LlmMessage> tail = new ArrayList<>(conversationHistory.subList(keepFrom, conversationHistory.size()));
+        String summary = buildHistorySummary(head);
+        if (summary.isBlank()) {
+            return false;
+        }
+
+        int beforeTokens = estimateTokensForMessages(conversationHistory);
+        List<LlmMessage> compacted = new ArrayList<>();
+        compacted.add(LlmMessage.system(COMPACT_SUMMARY_MARKER + "\n" + summary)); //$NON-NLS-1$
+        compacted.addAll(tail);
+        conversationHistory.clear();
+        conversationHistory.addAll(compacted);
+        int afterTokens = estimateTokensForMessages(conversationHistory);
+
+        String mode = automatic ? Messages.ChatView_AutoCompactLabel : Messages.ChatView_ManualCompactLabel;
+        appendSystemMessage(Messages.ChatView_ContextCompactedNotice + " (" + mode + ")."); //$NON-NLS-1$ //$NON-NLS-2$
+        LOG.info("Chat history compacted (%s): messages %d -> %d, tokens %d -> %d", //$NON-NLS-1$
+                mode, head.size() + tail.size(), conversationHistory.size(), beforeTokens, afterTokens);
+        return true;
+    }
+
+    private String buildHistorySummary(List<LlmMessage> messages) {
+        if (messages.isEmpty()) {
+            return ""; //$NON-NLS-1$
+        }
+        String summary = messages.stream()
+                .filter(msg -> msg != null && msg.getContent() != null && !msg.getContent().isBlank())
+                .filter(msg -> !(msg.getRole() == LlmMessage.Role.SYSTEM
+                        && msg.getContent().startsWith(COMPACT_SUMMARY_MARKER)))
+                .map(msg -> summarizeMessageLine(msg.getRole(), msg.getContent()))
+                .limit(120)
+                .collect(Collectors.joining("\n")); //$NON-NLS-1$
+
+        if (summary.length() > 6000) {
+            return summary.substring(0, 6000) + "\n..."; //$NON-NLS-1$
+        }
+        return summary;
+    }
+
+    private String summarizeMessageLine(LlmMessage.Role role, String content) {
+        String roleText = switch (role) {
+            case USER -> "Пользователь"; //$NON-NLS-1$
+            case ASSISTANT -> "Ассистент"; //$NON-NLS-1$
+            case TOOL -> "Инструмент"; //$NON-NLS-1$
+            case SYSTEM -> "Система"; //$NON-NLS-1$
+        };
+        String normalized = content.replace('\n', ' ').replace('\r', ' ').trim();
+        if (normalized.length() > 220) {
+            normalized = normalized.substring(0, 220) + "..."; //$NON-NLS-1$
+        }
+        return roleText + ": " + normalized; //$NON-NLS-1$
+    }
+
+    private boolean isHistoryLarge() {
+        if (conversationHistory.size() < AUTO_COMPACT_MIN_MESSAGES) {
+            return false;
+        }
+        int thresholdPercent = getAutoCompactThresholdPercent();
+        int estimatedTokens = estimateTokensForMessages(conversationHistory);
+        int thresholdTokens = (AUTO_COMPACT_HISTORY_TOKEN_BUDGET * thresholdPercent) / 100;
+        return estimatedTokens >= thresholdTokens;
+    }
+
+    private int estimateTokensForMessages(List<LlmMessage> messages) {
+        if (messages == null || messages.isEmpty()) {
+            return 0;
+        }
+        int chars = 0;
+        for (LlmMessage message : messages) {
+            if (message == null) {
+                continue;
+            }
+            String content = message.getContent();
+            if (content != null) {
+                chars += content.length();
+            }
+        }
+        return Math.max(0, chars / CHARS_PER_TOKEN_ESTIMATE);
+    }
+
+    private LlmResponse.Usage estimateUsageForResponse(LlmRequest request, String content, String reasoning) {
+        int input = request != null ? estimateTokensForMessages(request.getMessages()) : 0;
+        int output = ((content == null ? 0 : content.length()) + (reasoning == null ? 0 : reasoning.length()))
+                / CHARS_PER_TOKEN_ESTIMATE;
+        return new LlmResponse.Usage(input, 0, output, Math.max(0, input + output));
+    }
+
+    private void registerUsage(LlmResponse response) {
+        if (response == null) {
+            return;
+        }
+        LlmResponse.Usage usage = response.getUsage();
+        if (usage == null) {
+            return;
+        }
+        inputTokensTotal += Math.max(0, usage.getPromptTokens());
+        cachedInputTokensTotal += Math.max(0, usage.getCachedPromptTokens());
+        outputTokensTotal += Math.max(0, usage.getCompletionTokens());
+        totalTokensTotal += Math.max(0, usage.getTotalTokens());
+        scheduleTokenUsageDisplayUpdate();
+    }
+
+    private void resetTokenUsage() {
+        inputTokensTotal = 0;
+        cachedInputTokensTotal = 0;
+        outputTokensTotal = 0;
+        totalTokensTotal = 0;
+        scheduleTokenUsageDisplayUpdate();
+    }
+
+    private void scheduleTokenUsageDisplayUpdate() {
+        if (isDisposed()) {
+            return;
+        }
+        Display display = getDisplay();
+        if (display == null || display.isDisposed()) {
+            return;
+        }
+        if (Display.getCurrent() == display) {
+            updateTokenUsageDisplay();
+            return;
+        }
+        display.asyncExec(() -> {
+            if (!isDisposed()) {
+                updateTokenUsageDisplay();
+            }
+        });
+    }
+
+    private void updateTokenUsageDisplay() {
+        if (tokenUsageLabel == null || tokenUsageLabel.isDisposed()) {
+            return;
+        }
+        boolean showUsage = isTokenUsageVisible();
+        tokenUsageLabel.setVisible(showUsage);
+        ((GridData) tokenUsageLabel.getLayoutData()).exclude = !showUsage;
+        if (!showUsage) {
+            tokenUsageLabel.setText(""); //$NON-NLS-1$
+            tokenUsageLabel.getParent().layout(true, true);
+            return;
+        }
+
+        long nonCachedInput = Math.max(0, inputTokensTotal - cachedInputTokensTotal);
+        long cachePercent = inputTokensTotal > 0 ? (cachedInputTokensTotal * 100L / inputTokensTotal) : 0L;
+        String text = String.format(
+                "Вход: %,d | Кэш: %,d (%d%%) | Выход: %,d | Итого: %,d", //$NON-NLS-1$
+                nonCachedInput,
+                cachedInputTokensTotal,
+                cachePercent,
+                outputTokensTotal,
+                totalTokensTotal);
+        tokenUsageLabel.setText(text);
+        tokenUsageLabel.getParent().layout(true, true);
+    }
+
+    private boolean isTokenUsageVisible() {
+        IEclipsePreferences prefs = InstanceScope.INSTANCE.getNode(CORE_PLUGIN_ID);
+        return prefs.getBoolean(VibePreferenceConstants.PREF_CHAT_SHOW_TOKEN_USAGE, true);
+    }
+
+    private boolean isAutoCompactEnabled() {
+        IEclipsePreferences prefs = InstanceScope.INSTANCE.getNode(CORE_PLUGIN_ID);
+        return prefs.getBoolean(VibePreferenceConstants.PREF_CHAT_AUTO_COMPACT_ENABLED, true);
+    }
+
+    private int getAutoCompactThresholdPercent() {
+        IEclipsePreferences prefs = InstanceScope.INSTANCE.getNode(CORE_PLUGIN_ID);
+        int value = prefs.getInt(VibePreferenceConstants.PREF_CHAT_AUTO_COMPACT_THRESHOLD_PERCENT, 85);
+        if (value < 50) {
+            return 50;
+        }
+        if (value > 95) {
+            return 95;
+        }
+        return value;
     }
 
     @Override

@@ -28,6 +28,12 @@ public final class VibePreferenceConstants {
     public static final String PREF_AGENT_SKIP_TOOL_CONFIRMATIONS = "agent.skipToolConfirmations"; //$NON-NLS-1$
     /** Default value for max tool iterations. */
     public static final int DEFAULT_MAX_TOOL_ITERATIONS = 100;
+    /** Enable automatic history compaction in chat view. */
+    public static final String PREF_CHAT_AUTO_COMPACT_ENABLED = "chat.autoCompact.enabled"; //$NON-NLS-1$
+    /** Threshold (percent) for automatic history compaction. */
+    public static final String PREF_CHAT_AUTO_COMPACT_THRESHOLD_PERCENT = "chat.autoCompact.thresholdPercent"; //$NON-NLS-1$
+    /** Show token usage stats in chat view. */
+    public static final String PREF_CHAT_SHOW_TOKEN_USAGE = "chat.showTokenUsage"; //$NON-NLS-1$
 
     // Claude preferences
     public static final String PREF_CLAUDE_API_KEY = "claude.apiKey"; //$NON-NLS-1$
