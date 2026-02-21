@@ -53,8 +53,20 @@ public class BuildAgentProfile implements AgentProfile {
             "edt_find_references",
             "edt_metadata_details",
             "scan_metadata_index",
+            "dcs_get_summary",
+            "dcs_list_nodes",
+            "dcs_create_main_schema",
+            "dcs_upsert_query_dataset",
+            "dcs_upsert_parameter",
+            "dcs_upsert_calculated_field",
             "extension_list_projects",
             "extension_list_objects",
+            "external_list_projects",
+            "external_list_objects",
+            "external_get_details",
+            "external_create_report",
+            "external_create_processing",
+            "edt_external_smoke",
             "extension_create_project",
             "extension_adopt_object",
             "extension_set_property_state",
@@ -114,9 +126,15 @@ public class BuildAgentProfile implements AgentProfile {
                 PermissionRule.allow("edt_find_references").forAllResources(),
                 PermissionRule.allow("edt_metadata_details").forAllResources(),
                 PermissionRule.allow("scan_metadata_index").forAllResources(),
+                PermissionRule.allow("dcs_get_summary").forAllResources(),
+                PermissionRule.allow("dcs_list_nodes").forAllResources(),
                 PermissionRule.allow("extension_list_projects").forAllResources(),
                 PermissionRule.allow("extension_list_objects").forAllResources(),
+                PermissionRule.allow("external_list_projects").forAllResources(),
+                PermissionRule.allow("external_list_objects").forAllResources(),
+                PermissionRule.allow("external_get_details").forAllResources(),
                 PermissionRule.allow("edt_extension_smoke").forAllResources(),
+                PermissionRule.allow("edt_external_smoke").forAllResources(),
                 PermissionRule.allow("edt_field_type_candidates").forAllResources(),
                 PermissionRule.allow("inspect_platform_reference").forAllResources(),
                 PermissionRule.allow("bsl_symbol_at_position").forAllResources(),
@@ -143,11 +161,29 @@ public class BuildAgentProfile implements AgentProfile {
                 PermissionRule.ask("extension_create_project")
                         .withDescription("Создание проекта расширения EDT")
                         .forAllResources(),
+                PermissionRule.ask("external_create_report")
+                        .withDescription("Создание проекта внешнего отчета EDT")
+                        .forAllResources(),
+                PermissionRule.ask("external_create_processing")
+                        .withDescription("Создание проекта внешней обработки EDT")
+                        .forAllResources(),
                 PermissionRule.ask("extension_adopt_object")
                         .withDescription("Добавление объекта основной конфигурации в расширение EDT")
                         .forAllResources(),
                 PermissionRule.ask("extension_set_property_state")
                         .withDescription("Установка состояния свойства объекта расширения EDT")
+                        .forAllResources(),
+                PermissionRule.ask("dcs_create_main_schema")
+                        .withDescription("Создание основной схемы СКД")
+                        .forAllResources(),
+                PermissionRule.ask("dcs_upsert_query_dataset")
+                        .withDescription("Создание/изменение набора данных запроса СКД")
+                        .forAllResources(),
+                PermissionRule.ask("dcs_upsert_parameter")
+                        .withDescription("Создание/изменение параметра СКД")
+                        .forAllResources(),
+                PermissionRule.ask("dcs_upsert_calculated_field")
+                        .withDescription("Создание/изменение вычисляемого поля СКД")
                         .forAllResources(),
                 PermissionRule.ask("add_metadata_child")
                         .withDescription("Создание вложенных объектов метаданных EDT")

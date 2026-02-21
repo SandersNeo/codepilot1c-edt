@@ -10,6 +10,12 @@ import org.eclipse.core.resources.IProject;
 import com.codepilot1c.core.edt.forms.CreateFormRequest;
 import com.codepilot1c.core.edt.forms.FormUsage;
 import com.codepilot1c.core.edt.forms.UpdateFormModelRequest;
+import com.codepilot1c.core.edt.external.ExternalCreateProcessingRequest;
+import com.codepilot1c.core.edt.external.ExternalCreateReportRequest;
+import com.codepilot1c.core.edt.dcs.DcsCreateMainSchemaRequest;
+import com.codepilot1c.core.edt.dcs.DcsUpsertCalculatedFieldRequest;
+import com.codepilot1c.core.edt.dcs.DcsUpsertParameterRequest;
+import com.codepilot1c.core.edt.dcs.DcsUpsertQueryDatasetRequest;
 import com.codepilot1c.core.edt.metadata.AddMetadataChildRequest;
 import com.codepilot1c.core.edt.metadata.CreateMetadataRequest;
 import com.codepilot1c.core.edt.metadata.DeleteMetadataRequest;
@@ -252,6 +258,82 @@ public class MetadataRequestValidationService {
         return payload;
     }
 
+    public Map<String, Object> normalizeExternalCreateReportPayload(
+            String projectName,
+            String externalProject,
+            String name,
+            String projectPath,
+            String version,
+            String synonym,
+            String comment
+    ) {
+        ExternalCreateReportRequest request = new ExternalCreateReportRequest(
+                projectName,
+                externalProject,
+                name,
+                projectPath,
+                version,
+                synonym,
+                comment);
+        request.validate();
+
+        Map<String, Object> payload = new LinkedHashMap<>();
+        payload.put("project", request.normalizedProjectName()); //$NON-NLS-1$
+        payload.put("external_project", request.normalizedExternalProjectName()); //$NON-NLS-1$
+        payload.put("name", request.normalizedObjectName()); //$NON-NLS-1$
+        if (projectPath != null && !projectPath.isBlank()) {
+            payload.put("project_path", projectPath.trim()); //$NON-NLS-1$
+        }
+        if (version != null && !version.isBlank()) {
+            payload.put("version", version.trim()); //$NON-NLS-1$
+        }
+        if (request.normalizedSynonym() != null) {
+            payload.put("synonym", request.normalizedSynonym()); //$NON-NLS-1$
+        }
+        if (request.normalizedComment() != null) {
+            payload.put("comment", request.normalizedComment()); //$NON-NLS-1$
+        }
+        return payload;
+    }
+
+    public Map<String, Object> normalizeExternalCreateProcessingPayload(
+            String projectName,
+            String externalProject,
+            String name,
+            String projectPath,
+            String version,
+            String synonym,
+            String comment
+    ) {
+        ExternalCreateProcessingRequest request = new ExternalCreateProcessingRequest(
+                projectName,
+                externalProject,
+                name,
+                projectPath,
+                version,
+                synonym,
+                comment);
+        request.validate();
+
+        Map<String, Object> payload = new LinkedHashMap<>();
+        payload.put("project", request.normalizedProjectName()); //$NON-NLS-1$
+        payload.put("external_project", request.normalizedExternalProjectName()); //$NON-NLS-1$
+        payload.put("name", request.normalizedObjectName()); //$NON-NLS-1$
+        if (projectPath != null && !projectPath.isBlank()) {
+            payload.put("project_path", projectPath.trim()); //$NON-NLS-1$
+        }
+        if (version != null && !version.isBlank()) {
+            payload.put("version", version.trim()); //$NON-NLS-1$
+        }
+        if (request.normalizedSynonym() != null) {
+            payload.put("synonym", request.normalizedSynonym()); //$NON-NLS-1$
+        }
+        if (request.normalizedComment() != null) {
+            payload.put("comment", request.normalizedComment()); //$NON-NLS-1$
+        }
+        return payload;
+    }
+
     public Map<String, Object> normalizeExtensionAdoptPayload(
             String projectName,
             String extensionProject,
@@ -313,6 +395,136 @@ public class MetadataRequestValidationService {
         payload.put("source_object_fqn", request.normalizedSourceObjectFqn()); //$NON-NLS-1$
         payload.put("property_name", request.normalizedPropertyName()); //$NON-NLS-1$
         payload.put("state", request.parseState().name()); //$NON-NLS-1$
+        return payload;
+    }
+
+    public Map<String, Object> normalizeDcsCreateMainSchemaPayload(
+            String projectName,
+            String ownerFqn,
+            String templateName,
+            Boolean forceReplace
+    ) {
+        DcsCreateMainSchemaRequest request = new DcsCreateMainSchemaRequest(
+                projectName,
+                ownerFqn,
+                templateName,
+                forceReplace);
+        request.validate();
+
+        Map<String, Object> payload = new LinkedHashMap<>();
+        payload.put("project", request.normalizedProjectName()); //$NON-NLS-1$
+        payload.put("owner_fqn", request.normalizedOwnerFqn()); //$NON-NLS-1$
+        payload.put("template_name", request.effectiveTemplateName()); //$NON-NLS-1$
+        payload.put("force_replace", Boolean.valueOf(request.shouldForceReplace())); //$NON-NLS-1$
+        return payload;
+    }
+
+    public Map<String, Object> normalizeDcsUpsertQueryDatasetPayload(
+            String projectName,
+            String ownerFqn,
+            String datasetName,
+            String query,
+            String dataSource,
+            Boolean autoFillAvailableFields,
+            Boolean useQueryGroupIfPossible
+    ) {
+        DcsUpsertQueryDatasetRequest request = new DcsUpsertQueryDatasetRequest(
+                projectName,
+                ownerFqn,
+                datasetName,
+                query,
+                dataSource,
+                autoFillAvailableFields,
+                useQueryGroupIfPossible);
+        request.validate();
+
+        Map<String, Object> payload = new LinkedHashMap<>();
+        payload.put("project", request.normalizedProjectName()); //$NON-NLS-1$
+        payload.put("owner_fqn", request.normalizedOwnerFqn()); //$NON-NLS-1$
+        payload.put("dataset_name", request.normalizedDatasetName()); //$NON-NLS-1$
+        if (request.normalizedQuery() != null) {
+            payload.put("query", request.normalizedQuery()); //$NON-NLS-1$
+        }
+        if (request.normalizedDataSource() != null) {
+            payload.put("data_source", request.normalizedDataSource()); //$NON-NLS-1$
+        }
+        if (request.autoFillAvailableFields() != null) {
+            payload.put("auto_fill_available_fields", request.autoFillAvailableFields()); //$NON-NLS-1$
+        }
+        if (request.useQueryGroupIfPossible() != null) {
+            payload.put("use_query_group_if_possible", request.useQueryGroupIfPossible()); //$NON-NLS-1$
+        }
+        return payload;
+    }
+
+    public Map<String, Object> normalizeDcsUpsertParameterPayload(
+            String projectName,
+            String ownerFqn,
+            String parameterName,
+            String expression,
+            Boolean availableAsField,
+            Boolean valueListAllowed,
+            Boolean denyIncompleteValues,
+            Boolean useRestriction
+    ) {
+        DcsUpsertParameterRequest request = new DcsUpsertParameterRequest(
+                projectName,
+                ownerFqn,
+                parameterName,
+                expression,
+                availableAsField,
+                valueListAllowed,
+                denyIncompleteValues,
+                useRestriction);
+        request.validate();
+
+        Map<String, Object> payload = new LinkedHashMap<>();
+        payload.put("project", request.normalizedProjectName()); //$NON-NLS-1$
+        payload.put("owner_fqn", request.normalizedOwnerFqn()); //$NON-NLS-1$
+        payload.put("parameter_name", request.normalizedParameterName()); //$NON-NLS-1$
+        if (request.normalizedExpression() != null) {
+            payload.put("expression", request.normalizedExpression()); //$NON-NLS-1$
+        }
+        if (request.availableAsField() != null) {
+            payload.put("available_as_field", request.availableAsField()); //$NON-NLS-1$
+        }
+        if (request.valueListAllowed() != null) {
+            payload.put("value_list_allowed", request.valueListAllowed()); //$NON-NLS-1$
+        }
+        if (request.denyIncompleteValues() != null) {
+            payload.put("deny_incomplete_values", request.denyIncompleteValues()); //$NON-NLS-1$
+        }
+        if (request.useRestriction() != null) {
+            payload.put("use_restriction", request.useRestriction()); //$NON-NLS-1$
+        }
+        return payload;
+    }
+
+    public Map<String, Object> normalizeDcsUpsertCalculatedFieldPayload(
+            String projectName,
+            String ownerFqn,
+            String dataPath,
+            String expression,
+            String presentationExpression
+    ) {
+        DcsUpsertCalculatedFieldRequest request = new DcsUpsertCalculatedFieldRequest(
+                projectName,
+                ownerFqn,
+                dataPath,
+                expression,
+                presentationExpression);
+        request.validate();
+
+        Map<String, Object> payload = new LinkedHashMap<>();
+        payload.put("project", request.normalizedProjectName()); //$NON-NLS-1$
+        payload.put("owner_fqn", request.normalizedOwnerFqn()); //$NON-NLS-1$
+        payload.put("data_path", request.normalizedDataPath()); //$NON-NLS-1$
+        if (request.normalizedExpression() != null) {
+            payload.put("expression", request.normalizedExpression()); //$NON-NLS-1$
+        }
+        if (request.normalizedPresentationExpression() != null) {
+            payload.put("presentation_expression", request.normalizedPresentationExpression()); //$NON-NLS-1$
+        }
         return payload;
     }
 
@@ -400,6 +612,30 @@ public class MetadataRequestValidationService {
                 checks.add("Операция create_form валидирована по обязательным полям и имени."); //$NON-NLS-1$
                 yield payload;
             }
+            case EXTERNAL_CREATE_REPORT -> {
+                Map<String, Object> payload = normalizeExternalCreateReportPayload(
+                        coalesceProject(request.projectName(), request.payload()),
+                        asString(request.payload().get("external_project")), //$NON-NLS-1$
+                        asString(request.payload().get("name")), //$NON-NLS-1$
+                        asOptionalString(request.payload().get("project_path")), //$NON-NLS-1$
+                        asOptionalString(request.payload().get("version")), //$NON-NLS-1$
+                        asOptionalString(request.payload().get("synonym")), //$NON-NLS-1$
+                        asOptionalString(request.payload().get("comment"))); //$NON-NLS-1$
+                checks.add("Операция external_create_report валидирована по обязательным полям."); //$NON-NLS-1$
+                yield payload;
+            }
+            case EXTERNAL_CREATE_PROCESSING -> {
+                Map<String, Object> payload = normalizeExternalCreateProcessingPayload(
+                        coalesceProject(request.projectName(), request.payload()),
+                        asString(request.payload().get("external_project")), //$NON-NLS-1$
+                        asString(request.payload().get("name")), //$NON-NLS-1$
+                        asOptionalString(request.payload().get("project_path")), //$NON-NLS-1$
+                        asOptionalString(request.payload().get("version")), //$NON-NLS-1$
+                        asOptionalString(request.payload().get("synonym")), //$NON-NLS-1$
+                        asOptionalString(request.payload().get("comment"))); //$NON-NLS-1$
+                checks.add("Операция external_create_processing валидирована по обязательным полям."); //$NON-NLS-1$
+                yield payload;
+            }
             case EXTENSION_CREATE_PROJECT -> {
                 Map<String, Object> payload = normalizeExtensionCreateProjectPayload(
                         coalesceProject(request.projectName(), request.payload()),
@@ -432,6 +668,50 @@ public class MetadataRequestValidationService {
                         asString(request.payload().get("property_name")), //$NON-NLS-1$
                         asString(request.payload().get("state"))); //$NON-NLS-1$
                 checks.add("Операция extension_set_property_state валидирована по обязательным полям."); //$NON-NLS-1$
+                yield payload;
+            }
+            case DCS_CREATE_MAIN_SCHEMA -> {
+                Map<String, Object> payload = normalizeDcsCreateMainSchemaPayload(
+                        coalesceProject(request.projectName(), request.payload()),
+                        asString(request.payload().get("owner_fqn")), //$NON-NLS-1$
+                        asOptionalString(request.payload().get("template_name")), //$NON-NLS-1$
+                        asOptionalBoolean(request.payload().get("force_replace"))); //$NON-NLS-1$
+                checks.add("Операция dcs_create_main_schema валидирована по обязательным полям."); //$NON-NLS-1$
+                yield payload;
+            }
+            case DCS_UPSERT_QUERY_DATASET -> {
+                Map<String, Object> payload = normalizeDcsUpsertQueryDatasetPayload(
+                        coalesceProject(request.projectName(), request.payload()),
+                        asString(request.payload().get("owner_fqn")), //$NON-NLS-1$
+                        asString(request.payload().get("dataset_name")), //$NON-NLS-1$
+                        asOptionalString(request.payload().get("query")), //$NON-NLS-1$
+                        asOptionalString(request.payload().get("data_source")), //$NON-NLS-1$
+                        asOptionalBoolean(request.payload().get("auto_fill_available_fields")), //$NON-NLS-1$
+                        asOptionalBoolean(request.payload().get("use_query_group_if_possible"))); //$NON-NLS-1$
+                checks.add("Операция dcs_upsert_query_dataset валидирована по обязательным полям."); //$NON-NLS-1$
+                yield payload;
+            }
+            case DCS_UPSERT_PARAMETER -> {
+                Map<String, Object> payload = normalizeDcsUpsertParameterPayload(
+                        coalesceProject(request.projectName(), request.payload()),
+                        asString(request.payload().get("owner_fqn")), //$NON-NLS-1$
+                        asString(request.payload().get("parameter_name")), //$NON-NLS-1$
+                        asOptionalString(request.payload().get("expression")), //$NON-NLS-1$
+                        asOptionalBoolean(request.payload().get("available_as_field")), //$NON-NLS-1$
+                        asOptionalBoolean(request.payload().get("value_list_allowed")), //$NON-NLS-1$
+                        asOptionalBoolean(request.payload().get("deny_incomplete_values")), //$NON-NLS-1$
+                        asOptionalBoolean(request.payload().get("use_restriction"))); //$NON-NLS-1$
+                checks.add("Операция dcs_upsert_parameter валидирована по обязательным полям."); //$NON-NLS-1$
+                yield payload;
+            }
+            case DCS_UPSERT_CALCULATED_FIELD -> {
+                Map<String, Object> payload = normalizeDcsUpsertCalculatedFieldPayload(
+                        coalesceProject(request.projectName(), request.payload()),
+                        asString(request.payload().get("owner_fqn")), //$NON-NLS-1$
+                        asString(request.payload().get("data_path")), //$NON-NLS-1$
+                        asOptionalString(request.payload().get("expression")), //$NON-NLS-1$
+                        asOptionalString(request.payload().get("presentation_expression"))); //$NON-NLS-1$
+                checks.add("Операция dcs_upsert_calculated_field валидирована по обязательным полям."); //$NON-NLS-1$
                 yield payload;
             }
             case ADD_METADATA_CHILD -> {

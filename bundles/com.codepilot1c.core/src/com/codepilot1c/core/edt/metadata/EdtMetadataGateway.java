@@ -11,6 +11,7 @@ import com._1c.g5.v8.dt.core.platform.IBmModelManager;
 import com._1c.g5.v8.dt.core.platform.IConfigurationProvider;
 import com._1c.g5.v8.dt.core.platform.IDerivedDataManagerProvider;
 import com._1c.g5.v8.dt.core.platform.IDtProjectManager;
+import com._1c.g5.v8.dt.core.platform.IExternalObjectProjectManager;
 import com._1c.g5.v8.dt.core.platform.IExtensionProjectManager;
 import com._1c.g5.v8.dt.core.platform.IV8Project;
 import com._1c.g5.v8.dt.core.platform.IV8ProjectManager;
@@ -73,6 +74,15 @@ public class EdtMetadataGateway {
         IExtensionProjectManager service = plugin.getExtensionProjectManager();
         if (service == null) {
             throw serviceUnavailable("IExtensionProjectManager"); //$NON-NLS-1$
+        }
+        return service;
+    }
+
+    public IExternalObjectProjectManager getExternalObjectProjectManager() {
+        VibeCorePlugin plugin = requirePlugin();
+        IExternalObjectProjectManager service = plugin.getExternalObjectProjectManager();
+        if (service == null) {
+            throw serviceUnavailable("IExternalObjectProjectManager"); //$NON-NLS-1$
         }
         return service;
     }
@@ -170,6 +180,12 @@ public class EdtMetadataGateway {
         getExtensionProjectManager();
         getModelObjectAdopter();
         getMdAdoptedPropertyAccess();
+    }
+
+    public void ensureExternalObjectRuntimeAvailable() {
+        ensureValidationRuntimeAvailable();
+        getV8ProjectManager();
+        getExternalObjectProjectManager();
     }
 
     public boolean isEdtAvailable() {

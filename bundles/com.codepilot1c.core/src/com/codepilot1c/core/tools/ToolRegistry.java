@@ -102,6 +102,18 @@ public class ToolRegistry {
         register(new ExtensionAdoptObjectTool());
         register(new ExtensionSetPropertyStateTool());
         register(new EdtExtensionSmokeTool());
+        register(new DcsGetSummaryTool());
+        register(new DcsListNodesTool());
+        register(new DcsCreateMainSchemaTool());
+        register(new DcsUpsertQueryDatasetTool());
+        register(new DcsUpsertParameterTool());
+        register(new DcsUpsertCalculatedFieldTool());
+        register(new ExternalListProjectsTool());
+        register(new ExternalListObjectsTool());
+        register(new ExternalGetDetailsTool());
+        register(new ExternalCreateReportTool());
+        register(new ExternalCreateProcessingTool());
+        register(new EdtExternalSmokeTool());
 
         // Extra tools may be contributed by an overlay (e.g. Pro) via extension point.
         loadToolsFromExtensionPoint();

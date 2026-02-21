@@ -23,6 +23,7 @@ import com._1c.g5.v8.dt.core.platform.IBmModelManager;
 import com._1c.g5.v8.dt.core.platform.IConfigurationProvider;
 import com._1c.g5.v8.dt.core.platform.IDerivedDataManagerProvider;
 import com._1c.g5.v8.dt.core.platform.IDtProjectManager;
+import com._1c.g5.v8.dt.core.platform.IExternalObjectProjectManager;
 import com._1c.g5.v8.dt.core.platform.IExtensionProjectManager;
 import com._1c.g5.v8.dt.core.platform.IV8ProjectManager;
 import com._1c.g5.v8.dt.md.extension.IMdAdoptedPropertyAccess;
@@ -54,6 +55,7 @@ public class VibeCorePlugin extends Plugin {
     private ServiceTracker<IBmModelManager, IBmModelManager> bmModelManagerTracker;
     private ServiceTracker<IDtProjectManager, IDtProjectManager> dtProjectManagerTracker;
     private ServiceTracker<IV8ProjectManager, IV8ProjectManager> v8ProjectManagerTracker;
+    private ServiceTracker<IExternalObjectProjectManager, IExternalObjectProjectManager> externalObjectProjectManagerTracker;
     private ServiceTracker<IExtensionProjectManager, IExtensionProjectManager> extensionProjectManagerTracker;
     private ServiceTracker<IModelObjectAdopter, IModelObjectAdopter> modelObjectAdopterTracker;
     private ServiceTracker<IMdAdoptedPropertyAccess, IMdAdoptedPropertyAccess> mdAdoptedPropertyAccessTracker;
@@ -126,6 +128,8 @@ public class VibeCorePlugin extends Plugin {
         dtProjectManagerTracker.open();
         v8ProjectManagerTracker = new ServiceTracker<>(context, IV8ProjectManager.class, null);
         v8ProjectManagerTracker.open();
+        externalObjectProjectManagerTracker = new ServiceTracker<>(context, IExternalObjectProjectManager.class, null);
+        externalObjectProjectManagerTracker.open();
         extensionProjectManagerTracker = new ServiceTracker<>(context, IExtensionProjectManager.class, null);
         extensionProjectManagerTracker.open();
         modelObjectAdopterTracker = new ServiceTracker<>(context, IModelObjectAdopter.class, null);
@@ -186,6 +190,8 @@ public class VibeCorePlugin extends Plugin {
         dtProjectManagerTracker = null;
         closeTracker(v8ProjectManagerTracker);
         v8ProjectManagerTracker = null;
+        closeTracker(externalObjectProjectManagerTracker);
+        externalObjectProjectManagerTracker = null;
         closeTracker(extensionProjectManagerTracker);
         extensionProjectManagerTracker = null;
         closeTracker(modelObjectAdopterTracker);
@@ -251,6 +257,10 @@ public class VibeCorePlugin extends Plugin {
 
     public IV8ProjectManager getV8ProjectManager() {
         return getTrackedService(v8ProjectManagerTracker, "IV8ProjectManager"); //$NON-NLS-1$
+    }
+
+    public IExternalObjectProjectManager getExternalObjectProjectManager() {
+        return getTrackedService(externalObjectProjectManagerTracker, "IExternalObjectProjectManager"); //$NON-NLS-1$
     }
 
     public IExtensionProjectManager getExtensionProjectManager() {

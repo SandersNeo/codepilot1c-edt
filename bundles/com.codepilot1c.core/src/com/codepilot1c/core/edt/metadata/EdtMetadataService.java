@@ -52,6 +52,7 @@ import com._1c.g5.v8.bm.integration.IBmPlatformGlobalEditingContext;
 import com._1c.g5.v8.derived.IDerivedDataManager;
 import com._1c.g5.v8.dt.core.platform.IBmModelManager;
 import com._1c.g5.v8.dt.core.platform.IConfigurationProvider;
+import com._1c.g5.v8.dt.core.platform.IExternalObjectProject;
 import com._1c.g5.v8.dt.core.platform.IDtProject;
 import com._1c.g5.v8.dt.core.platform.IDtProjectManager;
 import com._1c.g5.v8.dt.form.model.DataPath;
@@ -188,7 +189,8 @@ public class EdtMetadataService {
 
         IConfigurationProvider configurationProvider = gateway.getConfigurationProvider();
         Configuration configuration = configurationProvider.getConfiguration(project);
-        if (configuration == null) {
+        boolean externalProject = isExternalProject(project);
+        if (configuration == null && !externalProject) {
             LOG.error("[%s] Configuration is null for project=%s", opId, request.projectName()); //$NON-NLS-1$
             throw new MetadataOperationException(
                     MetadataOperationCode.EDT_SERVICE_UNAVAILABLE,
@@ -259,7 +261,9 @@ public class EdtMetadataService {
         request.validate();
         FormUsage effectiveUsage = resolveEffectiveFormUsage(request.ownerFqn(), request.name(), request.usage());
         String effectiveName = resolveEffectiveFormName(request.ownerFqn(), request.name(), effectiveUsage);
-        boolean bindAsDefault = resolveDefaultBinding(request.setAsDefault(), effectiveUsage);
+        IProject project = requireProject(request.projectName());
+        boolean externalProject = isExternalProject(project);
+        boolean bindAsDefault = resolveDefaultBinding(request.setAsDefault(), effectiveUsage, request.ownerFqn(), externalProject);
         LOG.info("[%s] createForm START project=%s owner=%s name=%s usage=%s setAsDefault=%s", // $NON-NLS-1$
                 opId,
                 request.projectName(),
@@ -268,13 +272,12 @@ public class EdtMetadataService {
                 effectiveUsage,
                 bindAsDefault);
         gateway.ensureMutationRuntimeAvailable();
-        IProject project = requireProject(request.projectName());
         readinessChecker.ensureReady(project);
         repairConfigurationMissingUuids(project, opId);
 
         IConfigurationProvider configurationProvider = gateway.getConfigurationProvider();
         Configuration configuration = configurationProvider.getConfiguration(project);
-        if (configuration == null) {
+        if (configuration == null && !externalProject) {
             throw new MetadataOperationException(
                     MetadataOperationCode.EDT_SERVICE_UNAVAILABLE,
                     "Cannot resolve project configuration", false); //$NON-NLS-1$
@@ -286,14 +289,14 @@ public class EdtMetadataService {
         final String capturedName = effectiveName;
 
         executeWrite(project, transaction -> {
-            Configuration txConfiguration = transaction.toTransactionObject(configuration);
-            if (txConfiguration == null) {
+            Configuration txConfiguration = toTransactionConfigurationOrNull(transaction, configuration);
+            if (txConfiguration == null && !externalProject) {
                 throw new MetadataOperationException(
                         MetadataOperationCode.EDT_TRANSACTION_FAILED,
                         "Cannot access configuration in BM transaction", false); //$NON-NLS-1$
             }
 
-            MdObject owner = resolveByFqn(txConfiguration, request.ownerFqn());
+            MdObject owner = resolveOwnerForMutation(project, transaction, txConfiguration, request.ownerFqn());
             if (owner == null) {
                 throw new MetadataOperationException(
                         MetadataOperationCode.METADATA_PARENT_NOT_FOUND,
@@ -316,7 +319,7 @@ public class EdtMetadataService {
             }
             populateFormContent(project, transaction, owner, form, txConfiguration, capturedUsage, opId);
             ensureUuidsRecursively(form, opId, formFqn);
-            if (capturedBindAsDefault) {
+            if (capturedBindAsDefault && !isExternalMetadataOwner(owner)) {
                 bindDefaultForm(owner, form, capturedUsage, opId);
             }
             ensureUuidsRecursively(owner, opId, request.ownerFqn());
@@ -371,20 +374,15 @@ public class EdtMetadataService {
 
         IConfigurationProvider configurationProvider = gateway.getConfigurationProvider();
         Configuration configuration = configurationProvider.getConfiguration(project);
-        if (configuration == null) {
+        if (configuration == null && tryResolveExternalProject(project) == null) {
             throw new MetadataOperationException(
                     MetadataOperationCode.EDT_SERVICE_UNAVAILABLE,
                     "Cannot resolve project configuration", false); //$NON-NLS-1$
         }
 
         List<String> operationSummaries = executeWrite(project, transaction -> {
-            Configuration txConfiguration = transaction.toTransactionObject(configuration);
-            if (txConfiguration == null) {
-                throw new MetadataOperationException(
-                        MetadataOperationCode.EDT_TRANSACTION_FAILED,
-                        "Cannot access configuration in BM transaction", false); //$NON-NLS-1$
-            }
-            MdObject resolved = resolveByFqn(txConfiguration, request.formFqn());
+            Configuration txConfiguration = toTransactionConfigurationOrNull(transaction, configuration);
+            MdObject resolved = resolveObjectForTransaction(project, transaction, txConfiguration, request.formFqn());
             if (!(resolved instanceof BasicForm basicForm)) {
                 throw new MetadataOperationException(
                         MetadataOperationCode.METADATA_NOT_FOUND,
@@ -426,16 +424,16 @@ public class EdtMetadataService {
 
         IConfigurationProvider configurationProvider = gateway.getConfigurationProvider();
         Configuration configuration = configurationProvider.getConfiguration(project);
-        if (configuration == null) {
+        if (configuration == null && tryResolveExternalProject(project) == null) {
             throw new MetadataOperationException(
                     MetadataOperationCode.EDT_SERVICE_UNAVAILABLE,
                     "Cannot resolve project configuration", false); //$NON-NLS-1$
         }
 
         InspectFormLayoutResult result = executeRead(project, tx -> {
-            Configuration txConfiguration = tx.toTransactionObject(configuration);
-            Configuration contextConfiguration = txConfiguration != null ? txConfiguration : configuration;
-            MdObject resolved = resolveByFqn(contextConfiguration, request.formFqn());
+            IBmPlatformTransaction platformTx = asPlatformTransaction(tx);
+            Configuration txConfiguration = toTransactionConfigurationOrNull(platformTx, configuration);
+            MdObject resolved = resolveObjectForTransaction(project, platformTx, txConfiguration, request.formFqn());
             if (!(resolved instanceof BasicForm basicForm)) {
                 throw new MetadataOperationException(
                         MetadataOperationCode.METADATA_NOT_FOUND,
@@ -497,7 +495,8 @@ public class EdtMetadataService {
 
         IConfigurationProvider configurationProvider = gateway.getConfigurationProvider();
         Configuration configuration = configurationProvider.getConfiguration(project);
-        if (configuration == null) {
+        final boolean externalProject = isExternalProject(project);
+        if (configuration == null && !externalProject) {
             LOG.error("[%s] Configuration is null for project=%s", opId, request.projectName()); //$NON-NLS-1$
             throw new MetadataOperationException(
                     MetadataOperationCode.EDT_SERVICE_UNAVAILABLE,
@@ -509,6 +508,19 @@ public class EdtMetadataService {
 
         String childFqn = executeWrite(project, transaction -> {
             LOG.debug("[%s] Transaction started for addMetadataChild", opId); //$NON-NLS-1$
+            if (externalProject
+                    && (request.childKind() == MetadataChildKind.ATTRIBUTE
+                            || request.childKind() == MetadataChildKind.TABULAR_SECTION)) {
+                return createGenericChildInExternalProject(project, request, transaction, capturedTypes);
+            }
+            if (configuration == null) {
+                if (!externalProject) {
+                    throw new MetadataOperationException(
+                            MetadataOperationCode.EDT_TRANSACTION_FAILED,
+                            "Cannot access configuration in BM transaction", false); //$NON-NLS-1$
+                }
+                return createGenericChildInExternalProject(project, request, transaction, capturedTypes);
+            }
             Configuration txConfiguration = transaction.toTransactionObject(configuration);
             if (txConfiguration == null) {
                 LOG.error("[%s] Failed to map configuration into transaction", opId); //$NON-NLS-1$
@@ -581,6 +593,9 @@ public class EdtMetadataService {
                     }
                     if (hasMapKeyIgnoreCase(operation, "group_type")) { //$NON-NLS-1$
                         applySimpleFeatureValue(group, "type", getMapValueIgnoreCase(operation, "group_type")); //$NON-NLS-1$ //$NON-NLS-2$
+                    } else if (!hasMapKeyIgnoreCase(set, "type")) { //$NON-NLS-1$
+                        // Safe default for managed form groups in external reports/processings.
+                        applySimpleFeatureValue(group, "type", "USUAL_GROUP"); //$NON-NLS-1$ //$NON-NLS-2$
                     }
                     insertItemIntoContainer(parentContainer, group, asOptionalInteger(operation.get("index"), "index")); //$NON-NLS-1$ //$NON-NLS-2$
                     summaries.add("add_group[" + operationIndex + "]: name=" + name + ", id=" + group.getId()); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
@@ -1718,24 +1733,7 @@ public class EdtMetadataService {
                     "Cannot resolve project configuration", false); //$NON-NLS-1$
         }
 
-        ModuleTarget target = executeRead(project, tx -> {
-            Configuration txConfiguration = tx.toTransactionObject(configuration);
-            if (txConfiguration == null) {
-                return null;
-            }
-            MdObject resolved = resolveByFqn(txConfiguration, request.objectFqn());
-            if (resolved == null) {
-                return null;
-            }
-            URI uri = resolved.eResource() != null ? resolved.eResource().getURI() : null;
-            String resourcePath = toProjectRelativePath(project, uri);
-            return new ModuleTarget(
-                    resolved.eClass().getName(),
-                    resourcePath,
-                    topKindFromFqn(request.objectFqn()),
-                    topNameFromFqn(request.objectFqn()),
-                    formNameFromFqn(request.objectFqn()));
-        });
+        ModuleTarget target = resolveModuleTarget(project, configuration, request.objectFqn());
         if (target == null) {
             throw new MetadataOperationException(
                     MetadataOperationCode.METADATA_NOT_FOUND,
@@ -1812,14 +1810,15 @@ public class EdtMetadataService {
 
     private List<String> buildModuleCandidates(ModuleTarget target, ModuleArtifactKind requestedKind) {
         LinkedHashSet<String> candidates = new LinkedHashSet<>();
-        if (target.formName() != null && target.topKind() != null && target.topName() != null) {
-            String formsPath = "src/" + mapTopFolder(target.topKind()) + "/" + target.topName() + "/Forms/" //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+        String topFolder = tryMapTopFolder(target.topKind());
+        if (target.formName() != null && topFolder != null && target.topName() != null) {
+            String formsPath = "src/" + topFolder + "/" + target.topName() + "/Forms/" //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
                     + target.formName() + "/Module.bsl"; //$NON-NLS-1$
             candidates.add(formsPath);
         }
-        if (target.topKind() != null && target.topName() != null) {
+        if (topFolder != null && target.topName() != null) {
             ModuleArtifactKind effectiveKind = target.formName() != null ? ModuleArtifactKind.MODULE : requestedKind;
-            String topPath = "src/" + mapTopFolder(target.topKind()) + "/" + target.topName() + "/" //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+            String topPath = "src/" + topFolder + "/" + target.topName() + "/" //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
                     + moduleFileName(effectiveKind, target.className());
             if (target.formName() == null) {
                 candidates.add(topPath);
@@ -1895,6 +1894,8 @@ public class EdtMetadataService {
             case "enum", "enums" -> "Enums"; //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
             case "report", "reports" -> "Reports"; //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
             case "dataprocessor", "dataprocessors" -> "DataProcessors"; //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+            case "externalreport", "externalreports" -> "ExternalReports"; //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+            case "externaldataprocessor", "externaldataprocessors" -> "ExternalDataProcessors"; //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
             case "constant", "constants" -> "Constants"; //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
             case "commandgroup", "commandgroups" -> "CommandGroups"; //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
             case "interface", "interfaces" -> "Interfaces"; //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
@@ -1936,6 +1937,14 @@ public class EdtMetadataService {
                     MetadataOperationCode.INVALID_METADATA_KIND,
                     "Unsupported top-level metadata kind: " + topKind, false); //$NON-NLS-1$
         };
+    }
+
+    private String tryMapTopFolder(String topKind) {
+        try {
+            return mapTopFolder(topKind);
+        } catch (MetadataOperationException e) {
+            return null;
+        }
     }
 
     private String topKindFromFqn(String fqn) {
@@ -1996,7 +2005,7 @@ public class EdtMetadataService {
             return FormUsage.AUXILIARY;
         }
         return switch (normalizeToken(ownerType)) {
-            case "catalog", "document", "task", "businessprocess", "dataprocessor", "report" -> FormUsage.OBJECT; //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$ //$NON-NLS-5$ //$NON-NLS-6$
+            case "catalog", "document", "task", "businessprocess", "dataprocessor", "report", "externalreport", "externaldataprocessor" -> FormUsage.OBJECT; //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$ //$NON-NLS-5$ //$NON-NLS-6$ //$NON-NLS-7$ //$NON-NLS-8$
             case "enum", "informationregister", "accumulationregister", "accountingregister", "calculationregister" -> FormUsage.LIST; //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$ //$NON-NLS-5$
             default -> FormUsage.AUXILIARY;
         };
@@ -2062,7 +2071,14 @@ public class EdtMetadataService {
                 || normalized.equals(normalizeToken("Object")); //$NON-NLS-1$
     }
 
-    private boolean resolveDefaultBinding(Boolean requestedSetAsDefault, FormUsage usage) {
+    private boolean resolveDefaultBinding(Boolean requestedSetAsDefault, FormUsage usage, String ownerFqn, boolean externalProject) {
+        if (externalProject) {
+            return false;
+        }
+        String ownerType = normalizeToken(topKindFromFqn(ownerFqn));
+        if ("externalreport".equals(ownerType) || "externaldataprocessor".equals(ownerType)) { //$NON-NLS-1$ //$NON-NLS-2$
+            return false;
+        }
         if (usage == FormUsage.AUXILIARY) {
             return false;
         }
@@ -2076,16 +2092,24 @@ public class EdtMetadataService {
             long waitMs,
             String opId
     ) {
-        String topKind = topKindFromFqn(ownerFqn);
-        String topName = topNameFromFqn(ownerFqn);
-        if (topKind == null || topName == null) {
-            throw new MetadataOperationException(
-                    MetadataOperationCode.INVALID_FORM_USAGE,
-                    "Invalid owner FQN for form materialization: " + ownerFqn, false); //$NON-NLS-1$
+        String ownerMdoPath = resolveOwnerMdoWorkspacePath(project, ownerFqn);
+        if (ownerMdoPath == null) {
+            String topKind = topKindFromFqn(ownerFqn);
+            String topName = topNameFromFqn(ownerFqn);
+            if (topKind == null || topName == null) {
+                throw new MetadataOperationException(
+                        MetadataOperationCode.INVALID_FORM_USAGE,
+                        "Invalid owner FQN for form materialization: " + ownerFqn, false); //$NON-NLS-1$
+            }
+            String topFolder = tryMapTopFolder(topKind);
+            if (topFolder == null) {
+                throw new MetadataOperationException(
+                        MetadataOperationCode.INVALID_FORM_USAGE,
+                        "Cannot resolve owner .mdo path for form materialization: " + ownerFqn, false); //$NON-NLS-1$
+            }
+            ownerMdoPath = "src/" + topFolder + "/" + topName + "/" + topName + ".mdo"; //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
         }
-
-        String ownerBasePath = "src/" + mapTopFolder(topKind) + "/" + topName + "/"; //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
-        IFile ownerMdoFile = project.getFile(ownerBasePath + topName + ".mdo"); //$NON-NLS-1$
+        IFile ownerMdoFile = project.getFile(ownerMdoPath);
         long startedAt = System.currentTimeMillis();
         long deadline = startedAt + waitMs;
 
@@ -2291,6 +2315,62 @@ public class EdtMetadataService {
                 parent.eClass().getName(), parent.getName());
 
         MetadataChildKind effectiveKind = normalizeChildKind(parent, request.childKind());
+        return createGenericChildForResolvedParent(
+                configuration,
+                parent,
+                request,
+                transaction,
+                preResolvedTypes,
+                effectiveKind);
+    }
+
+    private String createGenericChildInExternalProject(
+            IProject project,
+            AddMetadataChildRequest request,
+            IBmPlatformTransaction transaction,
+            Map<String, TypeItem> preResolvedTypes
+    ) {
+        MetadataChildKind requestedKind = request.childKind();
+        if (requestedKind != MetadataChildKind.ATTRIBUTE
+                && requestedKind != MetadataChildKind.TABULAR_SECTION) {
+            throw new MetadataOperationException(
+                    MetadataOperationCode.INVALID_METADATA_KIND,
+                    "External project add_metadata_child currently supports ATTRIBUTE and TABULAR_SECTION only",
+                    false); //$NON-NLS-1$
+        }
+        IExternalObjectProject externalProject = resolveExternalProject(project);
+        MdObject parent = resolveExternalByFqn(externalProject, request.parentFqn());
+        if (parent == null) {
+            throw new MetadataOperationException(
+                    MetadataOperationCode.METADATA_PARENT_NOT_FOUND,
+                    "Parent not found in external project: " + request.parentFqn(),
+                    false); //$NON-NLS-1$
+        }
+        MdObject txParent = toTransactionMdObject(transaction, parent);
+        if (txParent == null) {
+            throw new MetadataOperationException(
+                    MetadataOperationCode.EDT_TRANSACTION_FAILED,
+                    "Cannot attach external parent into transaction: " + request.parentFqn(),
+                    false); //$NON-NLS-1$
+        }
+        MetadataChildKind effectiveKind = normalizeChildKind(txParent, request.childKind());
+        return createGenericChildForResolvedParent(
+                null,
+                txParent,
+                request,
+                transaction,
+                preResolvedTypes,
+                effectiveKind);
+    }
+
+    private String createGenericChildForResolvedParent(
+            Configuration configuration,
+            MdObject parent,
+            AddMetadataChildRequest request,
+            IBmPlatformTransaction transaction,
+            Map<String, TypeItem> preResolvedTypes,
+            MetadataChildKind effectiveKind
+    ) {
         List<String> createdFqns = new ArrayList<>();
         if (request.hasSingleName()) {
             validateReservedChildName(parent, effectiveKind, request.name());
@@ -2343,7 +2423,11 @@ public class EdtMetadataService {
 
     private MdObject createFormByParent(MdObject parent) {
         String parentClass = parent.eClass().getName();
-        String factoryMethod = formOwnerStrategy.resolveFactoryMethod(parentClass);
+        String factoryMethod = switch (parentClass) {
+            case "ExternalReport" -> "createReportForm"; //$NON-NLS-1$ //$NON-NLS-2$
+            case "ExternalDataProcessor" -> "createDataProcessorForm"; //$NON-NLS-1$ //$NON-NLS-2$
+            default -> formOwnerStrategy.resolveFactoryMethod(parentClass);
+        };
         MdObject created = invokeFactory(factoryMethod);
         if (created == null) {
             throw new MetadataOperationException(
@@ -2467,7 +2551,7 @@ public class EdtMetadataService {
                     runtimeVersion,
                     formFieldInfo,
                     Integer.valueOf(1),
-                    configuration.getInterfaceCompatibilityMode());
+                    configuration != null ? configuration.getInterfaceCompatibilityMode() : null);
             if (generatedForm == null) {
                 throw new MetadataOperationException(
                         MetadataOperationCode.EDT_TRANSACTION_FAILED,
@@ -2578,6 +2662,7 @@ public class EdtMetadataService {
         String ownerType = owner.eClass().getName();
         return switch (ownerType) {
             case "Report" -> "REPORT"; //$NON-NLS-1$ //$NON-NLS-2$
+            case "ExternalReport" -> "REPORT"; //$NON-NLS-1$ //$NON-NLS-2$
             case "Enum", "InformationRegister", "AccumulationRegister", "AccountingRegister", "CalculationRegister" -> "LIST"; //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$ //$NON-NLS-5$ //$NON-NLS-6$
             default -> "OBJECT"; //$NON-NLS-1$
         };
@@ -2610,6 +2695,105 @@ public class EdtMetadataService {
             }
         }
         return versionClass.getField("LATEST").get(null); //$NON-NLS-1$
+    }
+
+    private ModuleTarget resolveModuleTarget(IProject project, Configuration configuration, String objectFqn) {
+        IExternalObjectProject externalProject = tryResolveExternalProject(project);
+        if (externalProject != null) {
+            MdObject object = resolveExternalByFqn(externalProject, objectFqn);
+            if (object == null) {
+                return null;
+            }
+            URI uri = object.eResource() != null ? object.eResource().getURI() : null;
+            return new ModuleTarget(
+                    object.eClass().getName(),
+                    toProjectRelativePath(project, uri),
+                    topKindFromFqn(objectFqn),
+                    topNameFromFqn(objectFqn),
+                    formNameFromFqn(objectFqn));
+        }
+        return executeRead(project, tx -> {
+            Configuration txConfiguration = toTransactionConfigurationOrNull(asPlatformTransaction(tx), configuration);
+            if (txConfiguration == null) {
+                return null;
+            }
+            MdObject resolved = resolveByFqn(txConfiguration, objectFqn);
+            if (resolved == null) {
+                return null;
+            }
+            URI uri = resolved.eResource() != null ? resolved.eResource().getURI() : null;
+            return new ModuleTarget(
+                    resolved.eClass().getName(),
+                    toProjectRelativePath(project, uri),
+                    topKindFromFqn(objectFqn),
+                    topNameFromFqn(objectFqn),
+                    formNameFromFqn(objectFqn));
+        });
+    }
+
+    private MdObject resolveOwnerForMutation(
+            IProject project,
+            IBmPlatformTransaction transaction,
+            Configuration txConfiguration,
+            String ownerFqn
+    ) {
+        if (txConfiguration != null) {
+            MdObject owner = resolveByFqn(txConfiguration, ownerFqn);
+            if (owner != null) {
+                return owner;
+            }
+        }
+        IExternalObjectProject externalProject = tryResolveExternalProject(project);
+        if (externalProject == null) {
+            return null;
+        }
+        MdObject owner = resolveExternalByFqn(externalProject, ownerFqn);
+        return toTransactionMdObject(transaction, owner);
+    }
+
+    private MdObject resolveObjectForTransaction(
+            IProject project,
+            IBmPlatformTransaction transaction,
+            Configuration txConfiguration,
+            String fqn
+    ) {
+        if (txConfiguration != null) {
+            MdObject resolved = resolveByFqn(txConfiguration, fqn);
+            if (resolved != null) {
+                return resolved;
+            }
+        }
+        IExternalObjectProject externalProject = tryResolveExternalProject(project);
+        if (externalProject == null) {
+            return null;
+        }
+        MdObject resolvedExternal = resolveExternalByFqn(externalProject, fqn);
+        MdObject txObject = toTransactionMdObject(transaction, resolvedExternal);
+        return txObject != null ? txObject : resolvedExternal;
+    }
+
+    private Configuration toTransactionConfigurationOrNull(IBmPlatformTransaction transaction, Configuration configuration) {
+        if (transaction == null || configuration == null) {
+            return null;
+        }
+        try {
+            return transaction.toTransactionObject(configuration);
+        } catch (RuntimeException e) {
+            LOG.debug("toTransactionConfigurationOrNull failed: %s", e.getMessage()); //$NON-NLS-1$
+            return null;
+        }
+    }
+
+    private IBmPlatformTransaction asPlatformTransaction(IBmTransaction transaction) {
+        return transaction instanceof IBmPlatformTransaction platformTransaction ? platformTransaction : null;
+    }
+
+    private boolean isExternalMetadataOwner(MdObject owner) {
+        if (owner == null || owner.eClass() == null) {
+            return false;
+        }
+        String className = owner.eClass().getName();
+        return "ExternalReport".equals(className) || "ExternalDataProcessor".equals(className); //$NON-NLS-1$ //$NON-NLS-2$
     }
 
     private Object resolveFormInjector(Bundle formBundle) throws ReflectiveOperationException {
@@ -2698,6 +2882,141 @@ public class EdtMetadataService {
         return null;
     }
 
+    private IExternalObjectProject resolveExternalProject(IProject project) {
+        if (project == null || !project.exists()) {
+            throw new MetadataOperationException(
+                    MetadataOperationCode.PROJECT_NOT_FOUND,
+                    "Project not found: " + (project != null ? project.getName() : "null"), //$NON-NLS-1$ //$NON-NLS-2$
+                    false);
+        }
+        try {
+            if (gateway.getV8ProjectManager().getProject(project) instanceof IExternalObjectProject externalProject) {
+                return externalProject;
+            }
+        } catch (RuntimeException e) {
+            throw new MetadataOperationException(
+                    MetadataOperationCode.EXTERNAL_OBJECT_API_UNAVAILABLE,
+                    "Cannot resolve external project handle: " + e.getMessage(),
+                    false,
+                    e); //$NON-NLS-1$
+        }
+        throw new MetadataOperationException(
+                MetadataOperationCode.INVALID_METADATA_KIND,
+                "Project is not an external-object project: " + project.getName(),
+                false); //$NON-NLS-1$
+    }
+
+    private IExternalObjectProject tryResolveExternalProject(IProject project) {
+        try {
+            return resolveExternalProject(project);
+        } catch (MetadataOperationException e) {
+            return null;
+        }
+    }
+
+    private MdObject resolveExternalByFqn(IExternalObjectProject externalProject, String fqn) {
+        if (externalProject == null || fqn == null || fqn.isBlank()) {
+            return null;
+        }
+        String[] parts = fqn.split("\\."); //$NON-NLS-1$
+        if (parts.length < 2) {
+            throw new MetadataOperationException(
+                    MetadataOperationCode.METADATA_PARENT_NOT_FOUND,
+                    "Parent FQN must be <Type>.<Name>[.<Marker>.<Name>...]",
+                    false); //$NON-NLS-1$
+        }
+
+        MdObject current = null;
+        String typeToken = normalizeToken(parts[0]);
+        String nameToken = parts[1];
+        for (MdObject candidate : externalProject.getExternalObjects(MdObject.class)) {
+            if (candidate == null || candidate.getName() == null) {
+                continue;
+            }
+            if (!candidate.getName().equalsIgnoreCase(nameToken)) {
+                continue;
+            }
+            if (matchesExternalTopType(typeToken, candidate.eClass().getName())) {
+                current = candidate;
+                break;
+            }
+        }
+        if (current == null) {
+            return null;
+        }
+        for (int i = 2; i < parts.length; i += 2) {
+            if (i + 1 >= parts.length) {
+                throw new MetadataOperationException(
+                        MetadataOperationCode.METADATA_PARENT_NOT_FOUND,
+                        "Nested FQN segments must be marker/name pairs: " + fqn,
+                        false); //$NON-NLS-1$
+            }
+            current = findNestedChild(current, parts[i], parts[i + 1]);
+            if (current == null) {
+                return null;
+            }
+        }
+        return current;
+    }
+
+    private boolean matchesExternalTopType(String expectedTypeToken, String actualClassName) {
+        if (expectedTypeToken == null || expectedTypeToken.isBlank()) {
+            return true;
+        }
+        String actual = normalizeToken(actualClassName);
+        if (expectedTypeToken.equals(actual)) {
+            return true;
+        }
+        if ("externalreport".equals(expectedTypeToken)) { //$NON-NLS-1$
+            return "externalreport".equals(actual); //$NON-NLS-1$
+        }
+        if ("externaldataprocessor".equals(expectedTypeToken)) { //$NON-NLS-1$
+            return "externaldataprocessor".equals(actual); //$NON-NLS-1$
+        }
+        if ("report".equals(expectedTypeToken) || "отчет".equals(expectedTypeToken) || "отчёт".equals(expectedTypeToken)) { //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+            return "externalreport".equals(actual); //$NON-NLS-1$
+        }
+        if ("dataprocessor".equals(expectedTypeToken) || "обработка".equals(expectedTypeToken)) { //$NON-NLS-1$ //$NON-NLS-2$
+            return "externaldataprocessor".equals(actual); //$NON-NLS-1$
+        }
+        return false;
+    }
+
+    private MdObject toTransactionMdObject(IBmPlatformTransaction transaction, MdObject object) {
+        if (transaction == null || object == null) {
+            return null;
+        }
+        try {
+            EObject mapped = transaction.toTransactionObject(object);
+            if (mapped instanceof MdObject mdObject) {
+                return mdObject;
+            }
+        } catch (RuntimeException e) {
+            LOG.debug("toTransactionMdObject via toTransactionObject failed: %s", e.getMessage()); //$NON-NLS-1$
+        }
+        URI uri = EcoreUtil.getURI(object);
+        if (uri == null) {
+            return null;
+        }
+        try {
+            EObject byUri = transaction.getObjectByUri(uri);
+            if (byUri instanceof MdObject mdObject) {
+                return mdObject;
+            }
+        } catch (RuntimeException e) {
+            LOG.debug("toTransactionMdObject via getObjectByUri failed: %s", e.getMessage()); //$NON-NLS-1$
+        }
+        try {
+            EObject external = transaction.getExternalObjectByUri(uri);
+            if (external instanceof MdObject mdObject) {
+                return mdObject;
+            }
+        } catch (RuntimeException e) {
+            LOG.debug("toTransactionMdObject via getExternalObjectByUri failed: %s", e.getMessage()); //$NON-NLS-1$
+        }
+        return null;
+    }
+
     private MdObject resolveByFqn(Configuration configuration, String fqn) {
         LOG.debug("resolveByFqn: %s", fqn); //$NON-NLS-1$
         String[] parts = fqn != null ? fqn.split("\\.") : new String[0]; //$NON-NLS-1$
@@ -2728,6 +3047,40 @@ public class EdtMetadataService {
             }
         }
         return current;
+    }
+
+    private String resolveOwnerMdoWorkspacePath(IProject project, String ownerFqn) {
+        if (project == null || ownerFqn == null || ownerFqn.isBlank()) {
+            return null;
+        }
+        IExternalObjectProject externalProject = tryResolveExternalProject(project);
+        if (externalProject != null) {
+            MdObject owner = resolveExternalByFqn(externalProject, ownerFqn);
+            if (owner == null || owner.eResource() == null) {
+                return null;
+            }
+            String resourcePath = toProjectRelativePath(project, owner.eResource().getURI());
+            if (isUsableMetadataResourcePath(resourcePath) && resourcePath.toLowerCase(Locale.ROOT).endsWith(".mdo")) { //$NON-NLS-1$
+                return resourcePath;
+            }
+            return null;
+        }
+        IConfigurationProvider configurationProvider = gateway.getConfigurationProvider();
+        Configuration configuration = configurationProvider.getConfiguration(project);
+        if (configuration == null) {
+            return null;
+        }
+        return executeRead(project, transaction -> {
+            Configuration txConfiguration = toTransactionConfigurationOrNull(asPlatformTransaction(transaction), configuration);
+            if (txConfiguration == null) {
+                return null;
+            }
+            MdObject owner = resolveByFqn(txConfiguration, ownerFqn);
+            if (owner == null || owner.eResource() == null) {
+                return null;
+            }
+            return toProjectRelativePath(project, owner.eResource().getURI());
+        });
     }
 
     private MdObject findTopLevel(Configuration configuration, String type, String name) {
@@ -2810,6 +3163,7 @@ public class EdtMetadataService {
         String childSuffix = kind.getDisplayName();
         List<String> candidates = new ArrayList<>();
         candidates.add("create" + parent.eClass().getName() + childSuffix); //$NON-NLS-1$
+        addExternalParentFactoryFallbacks(parent, childSuffix, candidates);
 
         String shortParent = parent.eClass().getName();
         int nestedPos = indexOfNestedSuffix(shortParent, kind);
@@ -2830,6 +3184,20 @@ public class EdtMetadataService {
         throw new MetadataOperationException(
                 MetadataOperationCode.INVALID_METADATA_KIND,
                 "Cannot create child kind " + kind + " for parent " + parent.eClass().getName(), false); //$NON-NLS-1$ //$NON-NLS-2$
+    }
+
+    private void addExternalParentFactoryFallbacks(MdObject parent, String childSuffix, List<String> candidates) {
+        if (parent == null || parent.eClass() == null || childSuffix == null || candidates == null) {
+            return;
+        }
+        String parentClass = parent.eClass().getName();
+        if ("ExternalReport".equals(parentClass)) { //$NON-NLS-1$
+            candidates.add("createReport" + childSuffix); //$NON-NLS-1$
+            return;
+        }
+        if ("ExternalDataProcessor".equals(parentClass)) { //$NON-NLS-1$
+            candidates.add("createDataProcessor" + childSuffix); //$NON-NLS-1$
+        }
     }
 
     private int indexOfNestedSuffix(String name, MetadataChildKind kind) {
@@ -5410,7 +5778,14 @@ public class EdtMetadataService {
                 Object[] constants = instanceClass.getEnumConstants();
                 if (constants != null) {
                     for (Object constant : constants) {
-                        if (constant != null && raw.equalsIgnoreCase(String.valueOf(constant))) {
+                        if (constant == null) {
+                            continue;
+                        }
+                        if (raw.equalsIgnoreCase(String.valueOf(constant))) {
+                            return constant;
+                        }
+                        if (constant instanceof Enum<?> enumConstant
+                                && raw.equalsIgnoreCase(enumConstant.name())) {
                             return constant;
                         }
                     }
@@ -6259,6 +6634,10 @@ public class EdtMetadataService {
     }
 
     private void repairConfigurationMissingUuids(IProject project, String opId) {
+        if (isExternalProject(project)) {
+            LOG.debug("[%s] Skip configuration UUID repair for external project=%s", opId, project.getName()); //$NON-NLS-1$
+            return;
+        }
         IConfigurationProvider configurationProvider = gateway.getConfigurationProvider();
         Configuration configuration = configurationProvider.getConfiguration(project);
         if (configuration == null) {
@@ -6662,6 +7041,11 @@ public class EdtMetadataService {
     }
 
     private void verifyObjectPersisted(IProject project, String fqn, String opId) {
+        if (isExternalProject(project)) {
+            LOG.debug("[%s] Skip BM configuration post-verify for external project=%s fqn=%s", //$NON-NLS-1$
+                    opId, project.getName(), fqn);
+            return;
+        }
         IConfigurationProvider configurationProvider = gateway.getConfigurationProvider();
         Configuration configuration = configurationProvider.getConfiguration(project);
         boolean exists = executeRead(project, tx -> {
@@ -6675,6 +7059,17 @@ public class EdtMetadataService {
                     "Metadata object not found after commit: " + fqn, true); //$NON-NLS-1$
         }
         LOG.debug("[%s] Post-verify passed for FQN=%s", opId, fqn); //$NON-NLS-1$
+    }
+
+    private boolean isExternalProject(IProject project) {
+        if (project == null || !project.exists()) {
+            return false;
+        }
+        try {
+            return gateway.getV8ProjectManager().getProject(project) instanceof IExternalObjectProject;
+        } catch (RuntimeException e) {
+            return false;
+        }
     }
 
     private void verifyObjectRemoved(IProject project, String fqn, String opId) {

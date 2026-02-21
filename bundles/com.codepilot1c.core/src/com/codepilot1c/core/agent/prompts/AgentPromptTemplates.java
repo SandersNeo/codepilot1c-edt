@@ -45,11 +45,13 @@ public final class AgentPromptTemplates {
         sb.append("## Доступные инструменты\n"); //$NON-NLS-1$
         sb.append("- Файлы: read_file, edit_file, write_file, glob, grep\n"); //$NON-NLS-1$
         sb.append("- EDT AST API: edt_content_assist, edt_find_references, edt_metadata_details, scan_metadata_index, get_diagnostics\n"); //$NON-NLS-1$
+        sb.append("- EDT СКД: dcs_get_summary, dcs_list_nodes, dcs_create_main_schema, dcs_upsert_query_dataset, dcs_upsert_parameter, dcs_upsert_calculated_field\n"); //$NON-NLS-1$
         sb.append("- EDT расширения (read-only): extension_list_projects, extension_list_objects\n"); //$NON-NLS-1$
+        sb.append("- EDT внешние объекты: external_list_projects, external_list_objects, external_get_details, external_create_report, external_create_processing\n"); //$NON-NLS-1$
         sb.append("- EDT type provider: edt_field_type_candidates (допустимые типы для поля метаданных)\n"); //$NON-NLS-1$
         sb.append("- EDT-метаданные: inspect_platform_reference, edt_validate_request, create_metadata, create_form, extension_create_project, extension_adopt_object, extension_set_property_state, inspect_form_layout, add_metadata_child, ensure_module_artifact, update_metadata, mutate_form_model, delete_metadata, edt_trace_export\n"); //$NON-NLS-1$
         sb.append("- EDT BSL-модель: bsl_symbol_at_position, bsl_type_at_position, bsl_scope_members\n"); //$NON-NLS-1$
-        sb.append("- Диагностика метаданных: edt_metadata_smoke (регрессионный smoke-прогон), edt_extension_smoke (e2e smoke для расширений)\n\n"); //$NON-NLS-1$
+        sb.append("- Диагностика метаданных: edt_metadata_smoke (регрессионный smoke-прогон), edt_extension_smoke (e2e smoke для расширений), edt_external_smoke (e2e smoke для внешних объектов)\n\n"); //$NON-NLS-1$
 
         sb.append("## Маршрутизация справки (обязательно)\n"); //$NON-NLS-1$
         sb.append("1. Если вопрос про встроенный язык 1С (например: Запрос, ТаблицаЗначений, Структура, методы языка) —\n"); //$NON-NLS-1$
@@ -63,7 +65,7 @@ public final class AgentPromptTemplates {
 
         if (metadataRulesEnabled) {
             sb.append("## Политика изменения метаданных (обязательно)\n"); //$NON-NLS-1$
-            sb.append("1. Перед create_metadata, create_form, extension_create_project, extension_adopt_object, extension_set_property_state, add_metadata_child, update_metadata, mutate_form_model и delete_metadata\n"); //$NON-NLS-1$
+            sb.append("1. Перед create_metadata, create_form, external_create_report, external_create_processing, extension_create_project, extension_adopt_object, extension_set_property_state, dcs_create_main_schema, dcs_upsert_query_dataset, dcs_upsert_parameter, dcs_upsert_calculated_field, add_metadata_child, update_metadata, mutate_form_model и delete_metadata\n"); //$NON-NLS-1$
             sb.append("   сначала вызывай edt_validate_request.\n"); //$NON-NLS-1$
             sb.append("2. Бери validation_token из ответа edt_validate_request и передавай в мутационный инструмент без изменения payload.\n"); //$NON-NLS-1$
             sb.append("3. Не создавай реквизиты с зарезервированными именами стандартных реквизитов.\n"); //$NON-NLS-1$
@@ -72,6 +74,20 @@ public final class AgentPromptTemplates {
             sb.append("6. Перед изменением модулей BSL объекта метаданных всегда сначала вызывай ensure_module_artifact.\n"); //$NON-NLS-1$
             sb.append("7. После любых изменений BSL/метаданных перед финальным ответом всегда вызывай get_diagnostics.\n\n"); //$NON-NLS-1$
         }
+
+        sb.append("## Workflow внешних отчетов и обработок\n"); //$NON-NLS-1$
+        sb.append("1. В контексте основной конфигурации сначала получай проекты через external_list_projects(project=<base>), затем объекты через external_list_objects.\n"); //$NON-NLS-1$
+        sb.append("2. Если внешнего проекта нет: edt_validate_request -> external_create_report/external_create_processing.\n"); //$NON-NLS-1$
+        sb.append("3. Для изменения внешнего объекта используй project=<external_project> в create_form/add_metadata_child/update_metadata/ensure_module_artifact.\n"); //$NON-NLS-1$
+        sb.append("4. Для правок BSL: ensure_module_artifact(project=<external_project>, object_fqn=<ExternalReport.Name|ExternalDataProcessor.Name>) -> edit_file.\n"); //$NON-NLS-1$
+        sb.append("5. После изменений обязательно get_diagnostics(scope=project, project_name=<external_project>).\n\n"); //$NON-NLS-1$
+
+        sb.append("## Workflow СКД\n"); //$NON-NLS-1$
+        sb.append("1. Проверяй текущее состояние: dcs_get_summary и dcs_list_nodes.\n"); //$NON-NLS-1$
+        sb.append("2. Если схема отсутствует: edt_validate_request -> dcs_create_main_schema.\n"); //$NON-NLS-1$
+        sb.append("3. Для набора данных запроса: edt_validate_request -> dcs_upsert_query_dataset.\n"); //$NON-NLS-1$
+        sb.append("4. Для параметров/вычисляемых полей: edt_validate_request -> dcs_upsert_parameter/dcs_upsert_calculated_field.\n"); //$NON-NLS-1$
+        sb.append("5. После изменений СКД обязательно get_diagnostics(scope=project, project_name=<project>).\n\n"); //$NON-NLS-1$
 
         if (formsRulesEnabled) {
             sb.append("## Политика работы с управляемыми формами 1С (обязательно)\n"); //$NON-NLS-1$
@@ -137,7 +153,8 @@ public final class AgentPromptTemplates {
         sb.append("## Инструменты\n"); //$NON-NLS-1$
         sb.append("read_file, glob, grep, list_files, search_codebase,\n"); //$NON-NLS-1$
         sb.append("get_diagnostics, edt_content_assist, edt_find_references, edt_metadata_details, scan_metadata_index,\n"); //$NON-NLS-1$
-        sb.append("extension_list_projects, extension_list_objects,\n"); //$NON-NLS-1$
+        sb.append("dcs_get_summary, dcs_list_nodes,\n"); //$NON-NLS-1$
+        sb.append("extension_list_projects, extension_list_objects, external_list_projects, external_list_objects, external_get_details,\n"); //$NON-NLS-1$
         sb.append("inspect_form_layout, bsl_symbol_at_position, bsl_type_at_position, bsl_scope_members, inspect_platform_reference.\n"); //$NON-NLS-1$
 
         return PromptQualityAssurance.verify(
@@ -175,7 +192,8 @@ public final class AgentPromptTemplates {
         sb.append("## Инструменты\n"); //$NON-NLS-1$
         sb.append("read_file, glob, grep, list_files, search_codebase,\n"); //$NON-NLS-1$
         sb.append("get_diagnostics, edt_content_assist, edt_find_references, edt_metadata_details, scan_metadata_index,\n"); //$NON-NLS-1$
-        sb.append("extension_list_projects, extension_list_objects,\n"); //$NON-NLS-1$
+        sb.append("dcs_get_summary, dcs_list_nodes,\n"); //$NON-NLS-1$
+        sb.append("extension_list_projects, extension_list_objects, external_list_projects, external_list_objects, external_get_details,\n"); //$NON-NLS-1$
         sb.append("inspect_form_layout, bsl_symbol_at_position, bsl_type_at_position, bsl_scope_members, inspect_platform_reference.\n"); //$NON-NLS-1$
 
         return PromptQualityAssurance.verify(
