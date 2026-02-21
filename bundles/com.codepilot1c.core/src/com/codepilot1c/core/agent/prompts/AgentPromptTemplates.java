@@ -45,10 +45,11 @@ public final class AgentPromptTemplates {
         sb.append("## Доступные инструменты\n"); //$NON-NLS-1$
         sb.append("- Файлы: read_file, edit_file, write_file, glob, grep\n"); //$NON-NLS-1$
         sb.append("- EDT AST API: edt_content_assist, edt_find_references, edt_metadata_details, scan_metadata_index, get_diagnostics\n"); //$NON-NLS-1$
+        sb.append("- EDT расширения (read-only): extension_list_projects, extension_list_objects\n"); //$NON-NLS-1$
         sb.append("- EDT type provider: edt_field_type_candidates (допустимые типы для поля метаданных)\n"); //$NON-NLS-1$
-        sb.append("- EDT-метаданные: inspect_platform_reference, edt_validate_request, create_metadata, create_form, inspect_form_layout, add_metadata_child, ensure_module_artifact, update_metadata, mutate_form_model, delete_metadata, edt_trace_export\n"); //$NON-NLS-1$
+        sb.append("- EDT-метаданные: inspect_platform_reference, edt_validate_request, create_metadata, create_form, extension_create_project, extension_adopt_object, extension_set_property_state, inspect_form_layout, add_metadata_child, ensure_module_artifact, update_metadata, mutate_form_model, delete_metadata, edt_trace_export\n"); //$NON-NLS-1$
         sb.append("- EDT BSL-модель: bsl_symbol_at_position, bsl_type_at_position, bsl_scope_members\n"); //$NON-NLS-1$
-        sb.append("- Диагностика метаданных: edt_metadata_smoke (регрессионный smoke-прогон)\n\n"); //$NON-NLS-1$
+        sb.append("- Диагностика метаданных: edt_metadata_smoke (регрессионный smoke-прогон), edt_extension_smoke (e2e smoke для расширений)\n\n"); //$NON-NLS-1$
 
         sb.append("## Маршрутизация справки (обязательно)\n"); //$NON-NLS-1$
         sb.append("1. Если вопрос про встроенный язык 1С (например: Запрос, ТаблицаЗначений, Структура, методы языка) —\n"); //$NON-NLS-1$
@@ -62,7 +63,7 @@ public final class AgentPromptTemplates {
 
         if (metadataRulesEnabled) {
             sb.append("## Политика изменения метаданных (обязательно)\n"); //$NON-NLS-1$
-            sb.append("1. Перед create_metadata, create_form, add_metadata_child, update_metadata, mutate_form_model и delete_metadata\n"); //$NON-NLS-1$
+            sb.append("1. Перед create_metadata, create_form, extension_create_project, extension_adopt_object, extension_set_property_state, add_metadata_child, update_metadata, mutate_form_model и delete_metadata\n"); //$NON-NLS-1$
             sb.append("   сначала вызывай edt_validate_request.\n"); //$NON-NLS-1$
             sb.append("2. Бери validation_token из ответа edt_validate_request и передавай в мутационный инструмент без изменения payload.\n"); //$NON-NLS-1$
             sb.append("3. Не создавай реквизиты с зарезервированными именами стандартных реквизитов.\n"); //$NON-NLS-1$
@@ -136,6 +137,7 @@ public final class AgentPromptTemplates {
         sb.append("## Инструменты\n"); //$NON-NLS-1$
         sb.append("read_file, glob, grep, list_files, search_codebase,\n"); //$NON-NLS-1$
         sb.append("get_diagnostics, edt_content_assist, edt_find_references, edt_metadata_details, scan_metadata_index,\n"); //$NON-NLS-1$
+        sb.append("extension_list_projects, extension_list_objects,\n"); //$NON-NLS-1$
         sb.append("inspect_form_layout, bsl_symbol_at_position, bsl_type_at_position, bsl_scope_members, inspect_platform_reference.\n"); //$NON-NLS-1$
 
         return PromptQualityAssurance.verify(
@@ -173,6 +175,7 @@ public final class AgentPromptTemplates {
         sb.append("## Инструменты\n"); //$NON-NLS-1$
         sb.append("read_file, glob, grep, list_files, search_codebase,\n"); //$NON-NLS-1$
         sb.append("get_diagnostics, edt_content_assist, edt_find_references, edt_metadata_details, scan_metadata_index,\n"); //$NON-NLS-1$
+        sb.append("extension_list_projects, extension_list_objects,\n"); //$NON-NLS-1$
         sb.append("inspect_form_layout, bsl_symbol_at_position, bsl_type_at_position, bsl_scope_members, inspect_platform_reference.\n"); //$NON-NLS-1$
 
         return PromptQualityAssurance.verify(

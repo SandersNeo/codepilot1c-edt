@@ -53,6 +53,12 @@ public class BuildAgentProfile implements AgentProfile {
             "edt_find_references",
             "edt_metadata_details",
             "scan_metadata_index",
+            "extension_list_projects",
+            "extension_list_objects",
+            "extension_create_project",
+            "extension_adopt_object",
+            "extension_set_property_state",
+            "edt_extension_smoke",
             "edt_field_type_candidates",
             "inspect_platform_reference",
             "bsl_symbol_at_position",
@@ -108,6 +114,9 @@ public class BuildAgentProfile implements AgentProfile {
                 PermissionRule.allow("edt_find_references").forAllResources(),
                 PermissionRule.allow("edt_metadata_details").forAllResources(),
                 PermissionRule.allow("scan_metadata_index").forAllResources(),
+                PermissionRule.allow("extension_list_projects").forAllResources(),
+                PermissionRule.allow("extension_list_objects").forAllResources(),
+                PermissionRule.allow("edt_extension_smoke").forAllResources(),
                 PermissionRule.allow("edt_field_type_candidates").forAllResources(),
                 PermissionRule.allow("inspect_platform_reference").forAllResources(),
                 PermissionRule.allow("bsl_symbol_at_position").forAllResources(),
@@ -130,6 +139,15 @@ public class BuildAgentProfile implements AgentProfile {
                         .forAllResources(),
                 PermissionRule.ask("create_form")
                         .withDescription("Создание управляемых форм EDT")
+                        .forAllResources(),
+                PermissionRule.ask("extension_create_project")
+                        .withDescription("Создание проекта расширения EDT")
+                        .forAllResources(),
+                PermissionRule.ask("extension_adopt_object")
+                        .withDescription("Добавление объекта основной конфигурации в расширение EDT")
+                        .forAllResources(),
+                PermissionRule.ask("extension_set_property_state")
+                        .withDescription("Установка состояния свойства объекта расширения EDT")
                         .forAllResources(),
                 PermissionRule.ask("add_metadata_child")
                         .withDescription("Создание вложенных объектов метаданных EDT")

@@ -11,8 +11,11 @@ import com._1c.g5.v8.dt.core.platform.IBmModelManager;
 import com._1c.g5.v8.dt.core.platform.IConfigurationProvider;
 import com._1c.g5.v8.dt.core.platform.IDerivedDataManagerProvider;
 import com._1c.g5.v8.dt.core.platform.IDtProjectManager;
+import com._1c.g5.v8.dt.core.platform.IExtensionProjectManager;
 import com._1c.g5.v8.dt.core.platform.IV8Project;
 import com._1c.g5.v8.dt.core.platform.IV8ProjectManager;
+import com._1c.g5.v8.dt.md.extension.IMdAdoptedPropertyAccess;
+import com._1c.g5.v8.dt.md.extension.adopt.IModelObjectAdopter;
 import com._1c.g5.v8.dt.platform.version.Version;
 import com.codepilot1c.core.internal.VibeCorePlugin;
 
@@ -61,6 +64,33 @@ public class EdtMetadataGateway {
         IV8ProjectManager service = plugin.getV8ProjectManager();
         if (service == null) {
             throw serviceUnavailable("IV8ProjectManager"); //$NON-NLS-1$
+        }
+        return service;
+    }
+
+    public IExtensionProjectManager getExtensionProjectManager() {
+        VibeCorePlugin plugin = requirePlugin();
+        IExtensionProjectManager service = plugin.getExtensionProjectManager();
+        if (service == null) {
+            throw serviceUnavailable("IExtensionProjectManager"); //$NON-NLS-1$
+        }
+        return service;
+    }
+
+    public IModelObjectAdopter getModelObjectAdopter() {
+        VibeCorePlugin plugin = requirePlugin();
+        IModelObjectAdopter service = plugin.getModelObjectAdopter();
+        if (service == null) {
+            throw serviceUnavailable("IModelObjectAdopter"); //$NON-NLS-1$
+        }
+        return service;
+    }
+
+    public IMdAdoptedPropertyAccess getMdAdoptedPropertyAccess() {
+        VibeCorePlugin plugin = requirePlugin();
+        IMdAdoptedPropertyAccess service = plugin.getMdAdoptedPropertyAccess();
+        if (service == null) {
+            throw serviceUnavailable("IMdAdoptedPropertyAccess"); //$NON-NLS-1$
         }
         return service;
     }
@@ -132,6 +162,14 @@ public class EdtMetadataGateway {
         ensureValidationRuntimeAvailable();
         getBmModelManager();
         getGlobalEditingContext();
+    }
+
+    public void ensureExtensionRuntimeAvailable() {
+        ensureValidationRuntimeAvailable();
+        getV8ProjectManager();
+        getExtensionProjectManager();
+        getModelObjectAdopter();
+        getMdAdoptedPropertyAccess();
     }
 
     public boolean isEdtAvailable() {

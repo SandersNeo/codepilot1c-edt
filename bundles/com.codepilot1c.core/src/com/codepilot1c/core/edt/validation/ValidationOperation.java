@@ -11,6 +11,9 @@ import com.codepilot1c.core.edt.metadata.MetadataOperationException;
 public enum ValidationOperation {
     CREATE_METADATA("create_metadata"), //$NON-NLS-1$
     CREATE_FORM("create_form"), //$NON-NLS-1$
+    EXTENSION_CREATE_PROJECT("extension_create_project"), //$NON-NLS-1$
+    EXTENSION_ADOPT_OBJECT("extension_adopt_object"), //$NON-NLS-1$
+    EXTENSION_SET_PROPERTY_STATE("extension_set_property_state"), //$NON-NLS-1$
     ADD_METADATA_CHILD("add_metadata_child"), //$NON-NLS-1$
     UPDATE_METADATA("update_metadata"), //$NON-NLS-1$
     DELETE_METADATA("delete_metadata"), //$NON-NLS-1$

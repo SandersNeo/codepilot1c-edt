@@ -204,6 +204,118 @@ public class MetadataRequestValidationService {
         return payload;
     }
 
+    public Map<String, Object> normalizeExtensionCreateProjectPayload(
+            String projectName,
+            String extensionProject,
+            String baseProject,
+            String projectPath,
+            String version,
+            String configurationName,
+            String purpose,
+            String compatibilityMode
+    ) {
+        String effectiveBaseProject = baseProject == null || baseProject.isBlank() ? projectName : baseProject.trim();
+        if (!projectName.equals(effectiveBaseProject)) {
+            throw new MetadataOperationException(
+                    MetadataOperationCode.KNOWLEDGE_REQUIRED,
+                    "payload.base_project must match project", false); //$NON-NLS-1$
+        }
+
+        com.codepilot1c.core.edt.extension.ExtensionCreateProjectRequest request =
+                new com.codepilot1c.core.edt.extension.ExtensionCreateProjectRequest(
+                        effectiveBaseProject,
+                        extensionProject,
+                        projectPath,
+                        version,
+                        configurationName,
+                        purpose,
+                        compatibilityMode);
+        request.validate();
+
+        Map<String, Object> payload = new LinkedHashMap<>();
+        payload.put("project", projectName); //$NON-NLS-1$
+        payload.put("base_project", request.normalizedBaseProjectName()); //$NON-NLS-1$
+        payload.put("extension_project", request.normalizedExtensionProjectName()); //$NON-NLS-1$
+        if (projectPath != null && !projectPath.isBlank()) {
+            payload.put("project_path", projectPath.trim()); //$NON-NLS-1$
+        }
+        if (version != null && !version.isBlank()) {
+            payload.put("version", version.trim()); //$NON-NLS-1$
+        }
+        if (configurationName != null && !configurationName.isBlank()) {
+            payload.put("configuration_name", configurationName.trim()); //$NON-NLS-1$
+        }
+        payload.put("purpose", request.effectivePurpose().name()); //$NON-NLS-1$
+        if (request.effectiveCompatibilityMode() != null) {
+            payload.put("compatibility_mode", request.effectiveCompatibilityMode().name()); //$NON-NLS-1$
+        }
+        return payload;
+    }
+
+    public Map<String, Object> normalizeExtensionAdoptPayload(
+            String projectName,
+            String extensionProject,
+            String baseProject,
+            String sourceObjectFqn,
+            Boolean updateIfExists
+    ) {
+        String effectiveBaseProject = baseProject == null || baseProject.isBlank() ? projectName : baseProject.trim();
+        if (!projectName.equals(effectiveBaseProject)) {
+            throw new MetadataOperationException(
+                    MetadataOperationCode.KNOWLEDGE_REQUIRED,
+                    "payload.base_project must match project", false); //$NON-NLS-1$
+        }
+        com.codepilot1c.core.edt.extension.ExtensionAdoptObjectRequest request =
+                new com.codepilot1c.core.edt.extension.ExtensionAdoptObjectRequest(
+                        effectiveBaseProject,
+                        extensionProject,
+                        sourceObjectFqn,
+                        updateIfExists);
+        request.validate();
+
+        Map<String, Object> payload = new LinkedHashMap<>();
+        payload.put("project", projectName); //$NON-NLS-1$
+        payload.put("base_project", effectiveBaseProject); //$NON-NLS-1$
+        payload.put("extension_project", request.normalizedExtensionProjectName()); //$NON-NLS-1$
+        payload.put("source_object_fqn", request.normalizedSourceObjectFqn()); //$NON-NLS-1$
+        payload.put("update_if_exists", Boolean.valueOf(request.shouldUpdateIfExists())); //$NON-NLS-1$
+        return payload;
+    }
+
+    public Map<String, Object> normalizeExtensionSetPropertyStatePayload(
+            String projectName,
+            String extensionProject,
+            String baseProject,
+            String sourceObjectFqn,
+            String propertyName,
+            String state
+    ) {
+        String effectiveBaseProject = baseProject == null || baseProject.isBlank() ? projectName : baseProject.trim();
+        if (!projectName.equals(effectiveBaseProject)) {
+            throw new MetadataOperationException(
+                    MetadataOperationCode.KNOWLEDGE_REQUIRED,
+                    "payload.base_project must match project", false); //$NON-NLS-1$
+        }
+
+        com.codepilot1c.core.edt.extension.ExtensionSetPropertyStateRequest request =
+                new com.codepilot1c.core.edt.extension.ExtensionSetPropertyStateRequest(
+                        extensionProject,
+                        effectiveBaseProject,
+                        sourceObjectFqn,
+                        propertyName,
+                        state);
+        request.validate();
+
+        Map<String, Object> payload = new LinkedHashMap<>();
+        payload.put("project", projectName); //$NON-NLS-1$
+        payload.put("base_project", effectiveBaseProject); //$NON-NLS-1$
+        payload.put("extension_project", request.normalizedExtensionProjectName()); //$NON-NLS-1$
+        payload.put("source_object_fqn", request.normalizedSourceObjectFqn()); //$NON-NLS-1$
+        payload.put("property_name", request.normalizedPropertyName()); //$NON-NLS-1$
+        payload.put("state", request.parseState().name()); //$NON-NLS-1$
+        return payload;
+    }
+
     public Map<String, Object> normalizeUpdatePayload(
             String projectName,
             String targetFqn,
@@ -286,6 +398,40 @@ public class MetadataRequestValidationService {
                         asOptionalString(request.payload().get("comment")), //$NON-NLS-1$
                         asOptionalLong(request.payload().get("wait_ms"))); //$NON-NLS-1$
                 checks.add("Операция create_form валидирована по обязательным полям и имени."); //$NON-NLS-1$
+                yield payload;
+            }
+            case EXTENSION_CREATE_PROJECT -> {
+                Map<String, Object> payload = normalizeExtensionCreateProjectPayload(
+                        coalesceProject(request.projectName(), request.payload()),
+                        asString(request.payload().get("extension_project")), //$NON-NLS-1$
+                        asOptionalString(request.payload().get("base_project")), //$NON-NLS-1$
+                        asOptionalString(request.payload().get("project_path")), //$NON-NLS-1$
+                        asOptionalString(request.payload().get("version")), //$NON-NLS-1$
+                        asOptionalString(request.payload().get("configuration_name")), //$NON-NLS-1$
+                        asOptionalString(request.payload().get("purpose")), //$NON-NLS-1$
+                        asOptionalString(request.payload().get("compatibility_mode"))); //$NON-NLS-1$
+                checks.add("Операция extension_create_project валидирована по обязательным полям."); //$NON-NLS-1$
+                yield payload;
+            }
+            case EXTENSION_ADOPT_OBJECT -> {
+                Map<String, Object> payload = normalizeExtensionAdoptPayload(
+                        coalesceProject(request.projectName(), request.payload()),
+                        asString(request.payload().get("extension_project")), //$NON-NLS-1$
+                        asOptionalString(request.payload().get("base_project")), //$NON-NLS-1$
+                        asString(request.payload().get("source_object_fqn")), //$NON-NLS-1$
+                        asOptionalBoolean(request.payload().get("update_if_exists"))); //$NON-NLS-1$
+                checks.add("Операция extension_adopt_object валидирована по обязательным полям."); //$NON-NLS-1$
+                yield payload;
+            }
+            case EXTENSION_SET_PROPERTY_STATE -> {
+                Map<String, Object> payload = normalizeExtensionSetPropertyStatePayload(
+                        coalesceProject(request.projectName(), request.payload()),
+                        asString(request.payload().get("extension_project")), //$NON-NLS-1$
+                        asOptionalString(request.payload().get("base_project")), //$NON-NLS-1$
+                        asString(request.payload().get("source_object_fqn")), //$NON-NLS-1$
+                        asString(request.payload().get("property_name")), //$NON-NLS-1$
+                        asString(request.payload().get("state"))); //$NON-NLS-1$
+                checks.add("Операция extension_set_property_state валидирована по обязательным полям."); //$NON-NLS-1$
                 yield payload;
             }
             case ADD_METADATA_CHILD -> {

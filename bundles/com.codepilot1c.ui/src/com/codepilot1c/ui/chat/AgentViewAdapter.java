@@ -34,6 +34,7 @@ import com.codepilot1c.core.provider.LlmProviderRegistry;
 import com.codepilot1c.core.settings.VibePreferenceConstants;
 import com.codepilot1c.core.tools.ToolRegistry;
 import com.codepilot1c.ui.dialogs.ToolConfirmationDialog;
+import com.codepilot1c.ui.internal.ToolDisplayNames;
 
 /**
  * Адаптер для интеграции AgentRunner с ChatView.
@@ -371,31 +372,7 @@ public class AgentViewAdapter implements IAgentEventListener {
      * Возвращает локализованное имя инструмента.
      */
     private String getToolDisplayName(String name) {
-        return switch (name) {
-            case "read_file" -> "Чтение файла";
-            case "edit_file" -> "Редактирование файла";
-            case "write_file" -> "Создание файла";
-            case "list_files" -> "Список файлов";
-            case "glob" -> "Поиск файлов";
-            case "grep" -> "Поиск текста";
-            case "shell" -> "Команда оболочки";
-            case "search_codebase" -> "Семантический поиск";
-            case "edt_content_assist" -> "EDT автодополнение";
-            case "edt_find_references" -> "EDT поиск ссылок";
-            case "edt_metadata_details" -> "EDT детали метаданных";
-            case "inspect_form_layout" -> "Структура формы";
-            case "get_platform_documentation" -> "Справка платформы";
-            case "bsl_symbol_at_position" -> "BSL символ по позиции";
-            case "bsl_type_at_position" -> "BSL тип по позиции";
-            case "bsl_scope_members" -> "BSL элементы области";
-            case "edt_validate_request" -> "Валидация запроса EDT";
-            case "create_metadata" -> "Создание метаданных EDT";
-            case "add_metadata_child" -> "Создание вложенных метаданных EDT";
-            case "edt_trace_export" -> "Трейс экспорта EDT";
-            case "edt_metadata_smoke" -> "Smoke метаданных EDT";
-            case "task" -> "Подзадача";
-            default -> name;
-        };
+        return ToolDisplayNames.get(name);
     }
 
     private void asyncExec(Runnable runnable) {

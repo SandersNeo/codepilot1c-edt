@@ -149,10 +149,23 @@ public class McpHostHttpTransport implements IMcpHostTransport {
                     return;
                 }
                 String json = gson.toJson(response);
-                // For JSON-RPC request/response over POST return plain JSON.
-                // Some clients (including Codex MCP) reject SSE-framed initialize responses.
-                exchange.getResponseHeaders().add("Content-Type", "application/json"); //$NON-NLS-1$ //$NON-NLS-2$
-                byte[] bytes = json.getBytes(StandardCharsets.UTF_8);
+                String accept = exchange.getRequestHeaders().getFirst("Accept"); //$NON-NLS-1$
+                boolean wantsSse = accept != null && accept.contains("text/event-stream"); //$NON-NLS-1$
+                boolean initializeRequest = request != null && "initialize".equals(request.getMethod()); //$NON-NLS-1$
+
+                byte[] bytes;
+                if (wantsSse && !initializeRequest) {
+                    // Keep SSE framing for streamable-http clients.
+                    // Initialize remains plain JSON because some clients (Codex MCP)
+                    // reject SSE-framed initialize responses.
+                    String sse = "event: message\n" //$NON-NLS-1$
+                            + "data: " + json + "\n\n"; //$NON-NLS-1$ //$NON-NLS-2$
+                    exchange.getResponseHeaders().add("Content-Type", "text/event-stream"); //$NON-NLS-1$ //$NON-NLS-2$
+                    bytes = sse.getBytes(StandardCharsets.UTF_8);
+                } else {
+                    exchange.getResponseHeaders().add("Content-Type", "application/json"); //$NON-NLS-1$ //$NON-NLS-2$
+                    bytes = json.getBytes(StandardCharsets.UTF_8);
+                }
                 exchange.sendResponseHeaders(200, bytes.length);
                 try (OutputStream os = exchange.getResponseBody()) {
                     os.write(bytes);

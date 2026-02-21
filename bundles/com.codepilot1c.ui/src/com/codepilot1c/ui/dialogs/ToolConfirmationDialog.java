@@ -25,6 +25,7 @@ import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Shell;
 
 import com.codepilot1c.core.model.ToolCall;
+import com.codepilot1c.ui.internal.ToolDisplayNames;
 
 /**
  * Dialog for confirming destructive tool operations.
@@ -186,27 +187,7 @@ public class ToolConfirmationDialog extends Dialog {
     }
 
     private String getToolDisplayName(String name) {
-        return switch (name) {
-            case "read_file" -> "Чтение файла"; //$NON-NLS-1$ //$NON-NLS-2$
-            case "edit_file" -> "Редактирование файла"; //$NON-NLS-1$ //$NON-NLS-2$
-            case "list_files" -> "Список файлов"; //$NON-NLS-1$ //$NON-NLS-2$
-            case "grep" -> "Поиск текста"; //$NON-NLS-1$ //$NON-NLS-2$
-            case "search_codebase" -> "Поиск по коду"; //$NON-NLS-1$ //$NON-NLS-2$
-            case "edt_content_assist" -> "EDT автодополнение"; //$NON-NLS-1$ //$NON-NLS-2$
-            case "edt_find_references" -> "EDT поиск ссылок"; //$NON-NLS-1$ //$NON-NLS-2$
-            case "edt_metadata_details" -> "EDT детали метаданных"; //$NON-NLS-1$ //$NON-NLS-2$
-            case "inspect_form_layout" -> "Структура формы"; //$NON-NLS-1$ //$NON-NLS-2$
-            case "get_platform_documentation" -> "Справка платформы"; //$NON-NLS-1$ //$NON-NLS-2$
-            case "bsl_symbol_at_position" -> "BSL символ по позиции"; //$NON-NLS-1$ //$NON-NLS-2$
-            case "bsl_type_at_position" -> "BSL тип по позиции"; //$NON-NLS-1$ //$NON-NLS-2$
-            case "bsl_scope_members" -> "BSL элементы области"; //$NON-NLS-1$ //$NON-NLS-2$
-            case "edt_validate_request" -> "Валидация запроса EDT"; //$NON-NLS-1$ //$NON-NLS-2$
-            case "create_metadata" -> "Создание метаданных EDT"; //$NON-NLS-1$ //$NON-NLS-2$
-            case "add_metadata_child" -> "Создание вложенных метаданных EDT"; //$NON-NLS-1$ //$NON-NLS-2$
-            case "edt_trace_export" -> "Трейс экспорта EDT"; //$NON-NLS-1$ //$NON-NLS-2$
-            case "edt_metadata_smoke" -> "Smoke метаданных EDT"; //$NON-NLS-1$ //$NON-NLS-2$
-            default -> name;
-        };
+        return ToolDisplayNames.get(name);
     }
 
     @Override

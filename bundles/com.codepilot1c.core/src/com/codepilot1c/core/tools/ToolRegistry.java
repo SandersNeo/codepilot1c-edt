@@ -96,6 +96,12 @@ public class ToolRegistry {
         register(new DeleteMetadataTool());
         register(new EdtMetadataSmokeTool());
         register(new EdtTraceExportTool());
+        register(new ExtensionListProjectsTool());
+        register(new ExtensionListObjectsTool());
+        register(new ExtensionCreateProjectTool());
+        register(new ExtensionAdoptObjectTool());
+        register(new ExtensionSetPropertyStateTool());
+        register(new EdtExtensionSmokeTool());
 
         // Extra tools may be contributed by an overlay (e.g. Pro) via extension point.
         loadToolsFromExtensionPoint();
