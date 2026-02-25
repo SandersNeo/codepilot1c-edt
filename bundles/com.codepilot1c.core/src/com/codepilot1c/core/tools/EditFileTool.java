@@ -7,11 +7,11 @@
  */
 package com.codepilot1c.core.tools;
 
-import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStreamReader;
+import java.io.InputStream;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
@@ -271,15 +271,19 @@ public class EditFileTool implements ITool {
     }
 
     private ToolResult replaceContent(IFile file, String content) throws CoreException {
+        String currentContent = readFileContent(file);
+        String lineSeparator = detectLineSeparator(currentContent);
+        String normalizedContent = normalizeLineEndings(content, lineSeparator);
+        Charset charset = getFileCharset(file);
         ByteArrayInputStream stream = new ByteArrayInputStream(
-                content.getBytes(StandardCharsets.UTF_8));
+                normalizedContent.getBytes(charset));
         file.setContents(stream, IResource.FORCE | IResource.KEEP_HISTORY, new NullProgressMonitor());
 
         // Refresh to ensure editors see the change
         file.refreshLocal(IResource.DEPTH_ZERO, new NullProgressMonitor());
 
         LOG.info("edit_file: содержимое записано в %s (%d байт)", //$NON-NLS-1$
-                file.getFullPath(), content.length());
+                file.getFullPath(), normalizedContent.length());
 
         return ToolResult.success(
                 "Updated file: " + file.getFullPath().toString() + //$NON-NLS-1$
@@ -296,6 +300,7 @@ public class EditFileTool implements ITool {
         if (currentContent == null) {
             return ToolResult.failure("Error reading file content"); //$NON-NLS-1$
         }
+        String lineSeparator = detectLineSeparator(currentContent);
 
         // Parse and apply edits
         List<EditBlock> blocks = searchReplaceFormat.parse(edits);
@@ -320,10 +325,11 @@ public class EditFileTool implements ITool {
             return ToolResult.failure(feedback);
         }
 
-        // Write the modified content
+        // Write the modified content preserving line endings
+        String normalizedContent = normalizeLineEndings(applyResult.afterContent(), lineSeparator);
         Charset charset = getFileCharset(file);
         ByteArrayInputStream stream = new ByteArrayInputStream(
-                applyResult.afterContent().getBytes(charset));
+                normalizedContent.getBytes(charset));
         file.setContents(stream, true, true, new NullProgressMonitor());
 
         return ToolResult.success(
@@ -340,6 +346,7 @@ public class EditFileTool implements ITool {
         if (currentContent == null) {
             return ToolResult.failure("Error reading file content"); //$NON-NLS-1$
         }
+        String lineSeparator = detectLineSeparator(currentContent);
 
         // Try fuzzy matching
         MatchResult matchResult = fuzzyMatcher.findMatch(oldText, currentContent);
@@ -357,7 +364,8 @@ public class EditFileTool implements ITool {
         // Apply the replacement
         String before = currentContent.substring(0, location.getStartOffset());
         String after = currentContent.substring(location.getEndOffset());
-        String newContent = before + newText + after;
+        String normalizedNewText = normalizeLineEndings(newText, lineSeparator);
+        String newContent = before + normalizedNewText + after;
 
         // Write with same charset
         Charset charset = getFileCharset(file);
@@ -380,27 +388,50 @@ public class EditFileTool implements ITool {
      */
     private String readFileContent(IFile file) {
         Charset charset = getFileCharset(file);
-        try (BufferedReader reader = new BufferedReader(
-                new InputStreamReader(file.getContents(), charset))) {
-            StringBuilder sb = new StringBuilder();
-            String line;
-            boolean firstLine = true;
-            while ((line = reader.readLine()) != null) {
-                if (!firstLine) {
-                    sb.append("\n"); //$NON-NLS-1$
-                }
-                // Skip BOM if present on first line
-                if (firstLine && line.startsWith("\uFEFF")) { //$NON-NLS-1$
-                    line = line.substring(1);
-                }
-                sb.append(line);
-                firstLine = false;
+        try (InputStream stream = file.getContents()) {
+            ByteArrayOutputStream buffer = new ByteArrayOutputStream();
+            byte[] data = new byte[4096];
+            int read;
+            while ((read = stream.read(data)) != -1) {
+                buffer.write(data, 0, read);
             }
-            return sb.toString();
+            String content = new String(buffer.toByteArray(), charset);
+            if (content.startsWith("\uFEFF")) { //$NON-NLS-1$
+                content = content.substring(1);
+            }
+            return content;
         } catch (IOException | CoreException e) {
             LOG.error("Error reading file %s: %s", file.getFullPath(), e.getMessage()); //$NON-NLS-1$
             return null;
         }
+    }
+
+    private String detectLineSeparator(String content) {
+        if (content == null || content.isEmpty()) {
+            return System.lineSeparator();
+        }
+        int lfIndex = content.indexOf('\n');
+        if (lfIndex > 0 && content.charAt(lfIndex - 1) == '\r') {
+            return "\r\n"; //$NON-NLS-1$
+        }
+        if (content.indexOf('\r') >= 0) {
+            return "\r"; //$NON-NLS-1$
+        }
+        if (lfIndex >= 0) {
+            return "\n"; //$NON-NLS-1$
+        }
+        return System.lineSeparator();
+    }
+
+    private String normalizeLineEndings(String text, String lineSeparator) {
+        if (text == null || text.isEmpty()) {
+            return text;
+        }
+        if (lineSeparator == null || lineSeparator.isEmpty() || "\n".equals(lineSeparator)) { //$NON-NLS-1$
+            return text.replace("\r\n", "\n").replace("\r", "\n"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$
+        }
+        String normalized = text.replace("\r\n", "\n").replace("\r", "\n"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$
+        return normalized.replace("\n", lineSeparator); //$NON-NLS-1$
     }
 
     /**
@@ -409,29 +440,11 @@ public class EditFileTool implements ITool {
      */
     @Deprecated
     private ToolResult searchAndReplace(IFile file, String oldText, String newText) throws CoreException {
-        // Read current content with proper encoding
-        Charset charset = getFileCharset(file);
-        String currentContent;
-        try (BufferedReader reader = new BufferedReader(
-                new InputStreamReader(file.getContents(), charset))) {
-            StringBuilder sb = new StringBuilder();
-            String line;
-            boolean firstLine = true;
-            while ((line = reader.readLine()) != null) {
-                if (!firstLine) {
-                    sb.append(System.lineSeparator());
-                }
-                // Skip BOM if present on first line
-                if (firstLine && line.startsWith("\uFEFF")) { //$NON-NLS-1$
-                    line = line.substring(1);
-                }
-                sb.append(line);
-                firstLine = false;
-            }
-            currentContent = sb.toString();
-        } catch (IOException e) {
-            return ToolResult.failure("Error reading file: " + e.getMessage()); //$NON-NLS-1$
+        String currentContent = readFileContent(file);
+        if (currentContent == null) {
+            return ToolResult.failure("Error reading file content"); //$NON-NLS-1$
         }
+        String lineSeparator = detectLineSeparator(currentContent);
 
         // Check if old_text exists
         if (!currentContent.contains(oldText)) {
@@ -447,9 +460,11 @@ public class EditFileTool implements ITool {
         }
 
         // Replace
-        String newContent = currentContent.replace(oldText, newText);
+        String normalizedNewText = normalizeLineEndings(newText, lineSeparator);
+        String newContent = currentContent.replace(oldText, normalizedNewText);
 
         // Write with same charset
+        Charset charset = getFileCharset(file);
         ByteArrayInputStream stream = new ByteArrayInputStream(
                 newContent.getBytes(charset));
         file.setContents(stream, true, true, new NullProgressMonitor());
