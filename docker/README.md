@@ -226,21 +226,7 @@ OSGi-фреймворк запустить бандл на старте.
 
 ---
 
-## Требования к EDT-проекту
 
-Проект должен быть в формате 1C:EDT (не конфигуратора). Структура:
-
-```
-MyProject/
-├── .project              ← обязательно: Eclipse project descriptor
-├── src/
-│   └── Configuration/
-│       ├── Configuration.mdo
-│       └── ...
-└── .edt.yml / .settings/ (опционально)
-```
-
-Конвертация из конфигуратора в EDT-формат — через EDT: `File → Import → 1C:Enterprise → Import from 1C:Enterprise Infobase`.
 
 ---
 
