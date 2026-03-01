@@ -11,7 +11,10 @@
 
    <license url="%licenseURL">%license</license>
 
-   <!-- TM Terminal is optional: feature handler checks for bundle at runtime. -->
+   <requires>
+      <import feature="org.eclipse.tm.terminal.feature" version="0.0.0" match="compatible"/>
+      <import feature="org.eclipse.cdt.native" version="0.0.0" match="compatible"/>
+   </requires>
 
    <plugin
          id="com.codepilot1c.core"
