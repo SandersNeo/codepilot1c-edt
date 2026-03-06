@@ -96,6 +96,7 @@ public class ToolRegistry {
         register(new UpdateMetadataTool());
         register(new MutateFormModelTool());
         register(new DeleteMetadataTool());
+        register(new YaxunitAuthoringTool());
         register(new EdtMetadataSmokeTool());
         register(new EdtTraceExportTool());
         register(new ExtensionListProjectsTool());

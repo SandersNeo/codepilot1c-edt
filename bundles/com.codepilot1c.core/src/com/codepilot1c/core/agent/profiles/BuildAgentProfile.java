@@ -87,6 +87,7 @@ public class BuildAgentProfile implements AgentProfile {
             "update_metadata",
             "mutate_form_model",
             "delete_metadata",
+            "author_yaxunit_tests",
             "update_metadata_properties",
             "delete_metadata_object",
             "edt_trace_export",
@@ -212,6 +213,9 @@ public class BuildAgentProfile implements AgentProfile {
                         .forAllResources(),
                 PermissionRule.ask("delete_metadata")
                         .withDescription("Удаление объектов метаданных EDT")
+                        .forAllResources(),
+                PermissionRule.ask("author_yaxunit_tests")
+                        .withDescription("Генерация/обновление автотестов YAxUnit")
                         .forAllResources(),
                 PermissionRule.ask("update_metadata_properties")
                         .withDescription("Обновление свойств объектов метаданных EDT")

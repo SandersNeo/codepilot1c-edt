@@ -99,6 +99,12 @@ public final class ToolDescriptorRegistry {
                 .category(ToolCategory.METADATA)
                 .build()); //$NON-NLS-1$
 
+        register(ToolDescriptor.builder("author_yaxunit_tests")
+                .category(ToolCategory.METADATA)
+                .mutating(true)
+                .tag("yaxunit")
+                .build()); //$NON-NLS-1$
+
         // Metadata mutation tools
         registerMutation("create_metadata", ToolCategory.METADATA); //$NON-NLS-1$
         registerMutation("create_form", ToolCategory.FORMS); //$NON-NLS-1$
