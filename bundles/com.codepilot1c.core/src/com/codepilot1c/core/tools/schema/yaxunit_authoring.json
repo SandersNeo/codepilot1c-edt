@@ -1,0 +1,73 @@
+{
+  "type": "object",
+  "description": "Creates/updates YAxUnit tests in a CommonModule. Reserved EDT attribute names are forbidden.",
+  "additionalProperties": false,
+  "properties": {
+    "project": {
+      "type": "string",
+      "description": "EDT project name"
+    },
+    "feature": {
+      "type": "string",
+      "description": "Feature name used to build AutoTests_<Feature> module (if module_name missing)"
+    },
+    "module_name": {
+      "type": "string",
+      "description": "Common module name (overrides feature)"
+    },
+    "module_synonym": {
+      "type": "string",
+      "description": "Module synonym"
+    },
+    "module_comment": {
+      "type": "string",
+      "description": "Module comment"
+    },
+    "subsystem_name": {
+      "type": "string",
+      "description": "Subsystem name (default: Tests)"
+    },
+    "subsystem_synonym": {
+      "type": "string",
+      "description": "Subsystem synonym"
+    },
+    "default_data_setup": {
+      "type": "string",
+      "description": "Default YAxUnit data helper call (must reference ЮТДанные)"
+    },
+    "tests": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "name": { "type": "string" },
+          "description": { "type": "string" },
+          "data_setup": { "type": "string" },
+          "arrange": { "type": "string" },
+          "act": { "type": "string" },
+          "assert": { "type": "string" },
+          "enabled": { "type": "boolean" }
+        },
+        "required": ["name"]
+      }
+    },
+    "remove_tests": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "replace_all": {
+      "type": "boolean",
+      "description": "Remove all existing generated tests and replace with tests[]"
+    },
+    "diagnostics_wait_ms": {
+      "type": "integer",
+      "description": "Wait time before diagnostics collection (ms)"
+    },
+    "diagnostics_max_items": {
+      "type": "integer",
+      "description": "Max diagnostics in response"
+    }
+  },
+  "required": ["project"]
+}
