@@ -44,7 +44,8 @@ public final class AgentPromptTemplates {
         sb.append("6. Отчитайся по схеме: что было -> что изменено -> почему -> результат проверки.\n\n"); //$NON-NLS-1$
 
         sb.append("## Доступные инструменты\n"); //$NON-NLS-1$
-        sb.append("- Файлы: read_file, edit_file, write_file, glob, grep\n"); //$NON-NLS-1$
+        sb.append("- Файлы и workspace: read_file, edit_file, write_file, glob, grep, workspace_import_project, import_project_from_infobase\n"); //$NON-NLS-1$
+        sb.append("- Git: git_inspect (status/log/branches/remotes/diff), git_mutate (create_repo/init/clone/remote/fetch/pull/push/branch/add/commit), git_clone_and_import_project (clone + workspace import)\n"); //$NON-NLS-1$
         sb.append("- EDT AST API: edt_content_assist, edt_find_references, edt_metadata_details, scan_metadata_index, get_diagnostics\n"); //$NON-NLS-1$
         sb.append("- EDT СКД: dcs_get_summary, dcs_list_nodes, dcs_create_main_schema, dcs_upsert_query_dataset, dcs_upsert_parameter, dcs_upsert_calculated_field\n"); //$NON-NLS-1$
         sb.append("- EDT расширения (read-only): extension_list_projects, extension_list_objects\n"); //$NON-NLS-1$
@@ -53,7 +54,7 @@ public final class AgentPromptTemplates {
         sb.append("- EDT-метаданные: inspect_platform_reference, edt_validate_request, create_metadata, create_form, apply_form_recipe, extension_create_project, extension_adopt_object, extension_set_property_state, inspect_form_layout, add_metadata_child, ensure_module_artifact, update_metadata, mutate_form_model, delete_metadata, edt_trace_export, author_yaxunit_tests\n"); //$NON-NLS-1$
         sb.append("- EDT BSL-модель: bsl_symbol_at_position, bsl_type_at_position, bsl_scope_members, bsl_list_methods, bsl_get_method_body\n"); //$NON-NLS-1$
         sb.append("- Диагностика метаданных: edt_metadata_smoke (регрессионный smoke-прогон), edt_extension_smoke (e2e smoke для расширений), edt_external_smoke (e2e smoke для внешних объектов)\n"); //$NON-NLS-1$
-        sb.append("- EDT runtime: edt_update_infobase (обновление связанной инфобазы проекта), edt_launch_app (запуск приложения по RuntimeClient launch config)\n"); //$NON-NLS-1$
+        sb.append("- EDT runtime: edt_update_infobase (обновление связанной инфобазы проекта), edt_launch_app (запуск приложения по RuntimeClient launch config), import_project_from_infobase (standalone export + import нового EDT проекта)\n"); //$NON-NLS-1$
         sb.append("- Анализ ошибок tools: analyze_tool_error (разбор error_code/message/log_path и рекомендации по восстановлению)\n"); //$NON-NLS-1$
         sb.append("- QA: qa_status (проверка окружения), qa_prepare_form_context (ensure+inspect формы для QA), qa_plan_scenario (планирование сценария), qa_compile_feature (компиляция feature), qa_validate_feature (проверка feature), qa_run (запуск VA E2E), qa_steps_search (debug-поиск legacy шагов)\n\n"); //$NON-NLS-1$
 

@@ -28,12 +28,14 @@ import com._1c.g5.v8.dt.core.platform.IExtensionProjectManager;
 import com._1c.g5.v8.dt.core.platform.IV8ProjectManager;
 import com._1c.g5.v8.dt.md.extension.IMdAdoptedPropertyAccess;
 import com._1c.g5.v8.dt.md.extension.adopt.IModelObjectAdopter;
+import com._1c.g5.v8.dt.cli.api.workspace.IImportConfigurationFilesApi;
 import com._1c.g5.v8.dt.platform.services.core.infobases.IInfobaseAccessManager;
 import com._1c.g5.v8.dt.platform.services.core.infobases.IInfobaseAssociationManager;
 import com._1c.g5.v8.dt.platform.services.core.runtimes.execution.IRuntimeComponentManager;
 import com._1c.g5.v8.dt.validation.marker.IMarkerManager;
 import com.e1c.g5.dt.applications.IApplicationManager;
 import com.e1c.g5.v8.dt.check.settings.ICheckRepository;
+import com.e1c.g5.v8.dt.platform.standaloneserver.wst.core.IStandaloneServerService;
 import com.codepilot1c.core.http.DefaultHttpClientFactory;
 import com.codepilot1c.core.http.HttpClientFactory;
 import com.codepilot1c.core.edt.runtime.EdtLaunchProcessRegistry;
@@ -72,6 +74,8 @@ public class VibeCorePlugin extends Plugin {
     private ServiceTracker<IInfobaseAssociationManager, IInfobaseAssociationManager> infobaseAssociationManagerTracker;
     private ServiceTracker<IInfobaseAccessManager, IInfobaseAccessManager> infobaseAccessManagerTracker;
     private ServiceTracker<IRuntimeComponentManager, IRuntimeComponentManager> runtimeComponentManagerTracker;
+    private ServiceTracker<IImportConfigurationFilesApi, IImportConfigurationFilesApi> importConfigurationFilesApiTracker;
+    private ServiceTracker<IStandaloneServerService, IStandaloneServerService> standaloneServerServiceTracker;
 
     @Override
     public void start(BundleContext context) throws Exception {
@@ -163,6 +167,10 @@ public class VibeCorePlugin extends Plugin {
         infobaseAccessManagerTracker.open();
         runtimeComponentManagerTracker = new ServiceTracker<>(context, IRuntimeComponentManager.class, null);
         runtimeComponentManagerTracker.open();
+        importConfigurationFilesApiTracker = new ServiceTracker<>(context, IImportConfigurationFilesApi.class, null);
+        importConfigurationFilesApiTracker.open();
+        standaloneServerServiceTracker = new ServiceTracker<>(context, IStandaloneServerService.class, null);
+        standaloneServerServiceTracker.open();
     }
 
     @Override
@@ -236,6 +244,10 @@ public class VibeCorePlugin extends Plugin {
         infobaseAccessManagerTracker = null;
         closeTracker(runtimeComponentManagerTracker);
         runtimeComponentManagerTracker = null;
+        closeTracker(importConfigurationFilesApiTracker);
+        importConfigurationFilesApiTracker = null;
+        closeTracker(standaloneServerServiceTracker);
+        standaloneServerServiceTracker = null;
 
         plugin = null;
         super.stop(context);
@@ -335,6 +347,14 @@ public class VibeCorePlugin extends Plugin {
 
     public IRuntimeComponentManager getRuntimeComponentManager() {
         return getTrackedService(runtimeComponentManagerTracker, "IRuntimeComponentManager"); //$NON-NLS-1$
+    }
+
+    public IImportConfigurationFilesApi getImportConfigurationFilesApi() {
+        return getTrackedService(importConfigurationFilesApiTracker, "IImportConfigurationFilesApi"); //$NON-NLS-1$
+    }
+
+    public IStandaloneServerService getStandaloneServerService() {
+        return getTrackedService(standaloneServerServiceTracker, "IStandaloneServerService"); //$NON-NLS-1$
     }
 
     private <T> T getTrackedService(ServiceTracker<T, T> tracker, String serviceName) {

@@ -27,6 +27,11 @@ public final class ToolDisplayNames {
             case "list_files" -> "Список файлов"; //$NON-NLS-1$ //$NON-NLS-2$
             case "glob" -> "Поиск файлов"; //$NON-NLS-1$ //$NON-NLS-2$
             case "grep" -> "Поиск текста"; //$NON-NLS-1$ //$NON-NLS-2$
+            case "workspace_import_project" -> "Импорт проекта в workspace"; //$NON-NLS-1$ //$NON-NLS-2$
+            case "git_inspect" -> "Git просмотр"; //$NON-NLS-1$ //$NON-NLS-2$
+            case "git_mutate" -> "Git изменение"; //$NON-NLS-1$ //$NON-NLS-2$
+            case "git_clone_and_import_project" -> "Git clone и импорт проекта"; //$NON-NLS-1$ //$NON-NLS-2$
+            case "import_project_from_infobase" -> "Импорт проекта из инфобазы"; //$NON-NLS-1$ //$NON-NLS-2$
             case "shell" -> "Команда оболочки"; //$NON-NLS-1$ //$NON-NLS-2$
             case "edt_content_assist" -> "EDT автодополнение"; //$NON-NLS-1$ //$NON-NLS-2$
             case "edt_find_references" -> "EDT поиск ссылок"; //$NON-NLS-1$ //$NON-NLS-2$

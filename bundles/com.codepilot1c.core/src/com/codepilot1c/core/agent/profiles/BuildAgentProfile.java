@@ -47,6 +47,11 @@ public class BuildAgentProfile implements AgentProfile {
             "glob",
             "grep",
             "list_files",
+            "workspace_import_project",
+            "git_inspect",
+            "git_mutate",
+            "git_clone_and_import_project",
+            "import_project_from_infobase",
             "get_diagnostics",
             "edt_content_assist",
             "edt_find_references",
@@ -133,6 +138,7 @@ public class BuildAgentProfile implements AgentProfile {
                 PermissionRule.allow("glob").forAllResources(),
                 PermissionRule.allow("grep").forAllResources(),
                 PermissionRule.allow("list_files").forAllResources(),
+                PermissionRule.allow("git_inspect").forAllResources(),
                 PermissionRule.allow("get_diagnostics").forAllResources(),
                 PermissionRule.allow("edt_content_assist").forAllResources(),
                 PermissionRule.allow("edt_find_references").forAllResources(),
@@ -172,6 +178,18 @@ public class BuildAgentProfile implements AgentProfile {
 	                PermissionRule.ask("write_file")
 	                        .withDescription("Создание файлов")
 	                        .forAllResources(),
+                PermissionRule.ask("workspace_import_project")
+                        .withDescription("Импорт проекта в workspace")
+                        .forAllResources(),
+                PermissionRule.ask("git_mutate")
+                        .withDescription("Мутирующие git-операции")
+                        .forAllResources(),
+                PermissionRule.ask("git_clone_and_import_project")
+                        .withDescription("Клонирование git-репозитория и импорт проекта")
+                        .forAllResources(),
+                PermissionRule.ask("import_project_from_infobase")
+                        .withDescription("Импорт EDT проекта из связанной инфобазы через standalone server")
+                        .forAllResources(),
                 PermissionRule.ask("create_metadata")
                         .withDescription("Создание объектов метаданных EDT")
                         .forAllResources(),

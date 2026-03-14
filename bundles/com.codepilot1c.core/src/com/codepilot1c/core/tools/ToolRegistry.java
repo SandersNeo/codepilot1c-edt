@@ -77,6 +77,11 @@ public class ToolRegistry {
         register(new WriteTool());
         register(new GrepTool());
         register(new GlobTool());
+        register(new WorkspaceImportProjectTool());
+        register(new GitInspectTool());
+        register(new GitMutateTool());
+        register(new GitCloneAndImportProjectTool());
+        register(new ImportProjectFromInfobaseTool());
         register(new EdtContentAssistTool());
         register(new EdtFindReferencesTool());
         register(new EdtMetadataDetailsTool());

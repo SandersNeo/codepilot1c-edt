@@ -12,6 +12,8 @@ public enum ToolCategory {
     DCS,
     DIAGNOSTICS,
     EXTENSION,
+    WORKSPACE,
+    GIT,
     MCP_GENERIC,
     OTHER
 }

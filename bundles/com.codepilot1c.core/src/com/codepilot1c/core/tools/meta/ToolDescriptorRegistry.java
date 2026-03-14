@@ -67,6 +67,15 @@ public final class ToolDescriptorRegistry {
         register(ToolDescriptor.builder("write_file").category(ToolCategory.FILES).mutating(true).build()); //$NON-NLS-1$
         register(ToolDescriptor.builder("grep").category(ToolCategory.FILES).build()); //$NON-NLS-1$
         register(ToolDescriptor.builder("glob").category(ToolCategory.FILES).build()); //$NON-NLS-1$
+        register(ToolDescriptor.builder("workspace_import_project").category(ToolCategory.WORKSPACE)
+                .mutating(true).build()); //$NON-NLS-1$
+        register(ToolDescriptor.builder("git_inspect").category(ToolCategory.GIT).build()); //$NON-NLS-1$
+        register(ToolDescriptor.builder("git_mutate").category(ToolCategory.GIT)
+                .mutating(true).build()); //$NON-NLS-1$
+        register(ToolDescriptor.builder("git_clone_and_import_project").category(ToolCategory.GIT)
+                .mutating(true).build()); //$NON-NLS-1$
+        register(ToolDescriptor.builder("import_project_from_infobase").category(ToolCategory.WORKSPACE)
+                .mutating(true).build()); //$NON-NLS-1$
 
         // BSL tools
         register(ToolDescriptor.builder("bsl_symbol_at_position").category(ToolCategory.BSL).build()); //$NON-NLS-1$
